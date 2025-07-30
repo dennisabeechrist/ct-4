@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Maze Protocol</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maze Protocol - HackPulse CTF</title>
   <style>
     body {
-      background-color: #111;
-      color: #0f0;
-      font-family: monospace;
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: #f1f1f1;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -15,119 +16,207 @@
       height: 100vh;
       margin: 0;
     }
+
     h1 {
-      margin-bottom: 10px;
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
     }
+
+    p {
+      max-width: 600px;
+      text-align: center;
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
+
     #maze {
       display: grid;
-      grid-template-columns: repeat(10, 30px);
-      grid-template-rows: repeat(10, 30px);
-      gap: 2px;
-      margin: 20px 0;
+      grid-template-columns: repeat(10, 40px);
+      grid-template-rows: repeat(10, 40px);
+      gap: 4px;
+      margin-bottom: 30px;
     }
+
     .tile {
-      width: 30px;
-      height: 30px;
-      background-color: #333;
-      border: 1px solid #000;
+      width: 40px;
+      height: 40px;
+      background-color: #2b2b2b;
+      border: 1px solid #444;
+      border-radius: 5px;
     }
+
     .player {
-      background-color: #0ff;
+      background-color: #00adb5 !important;
     }
+
     .visited {
-      background-color: #222;
+      background-color: #3a3a3a;
     }
+
+    .trap {
+      background-color: #b31217 !important;
+    }
+
+    .flag {
+      background-color: #00ff7f !important;
+    }
+
     #controls {
-      margin: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
     button {
-      background-color: #222;
-      color: #0f0;
-      border: 1px solid #0f0;
-      margin: 2px;
-      padding: 5px 10px;
+      background-color: #393e46;
+      color: #eeeeee;
+      border: none;
+      padding: 10px 15px;
+      font-size: 16px;
+      border-radius: 6px;
       cursor: pointer;
+      transition: background-color 0.3s;
     }
-    #msg {
-      margin-top: 10px;
+
+    button:hover {
+      background-color: #00adb5;
+    }
+
+    #message {
+      font-size: 1.2rem;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
   <h1>Maze Protocol</h1>
+  <p>
+    Navigate through the digital labyrinth. One tile holds the truth — the <strong>flag</strong>.
+    Beware of traps. Trust nothing but your instincts.
+  </p>
+
   <div id="maze"></div>
+
   <div id="controls">
-    <button onclick="move('up')">⬆️</button><br>
-    <button onclick="move('left')">⬅️</button>
-    <button onclick="move('down')">⬇️</button>
-    <button onclick="move('right')">➡️</button>
-    <button onclick="resetMaze()">🔄 Reset</button>
+    <div class="btn-row">
+      <button onclick="move('up')">⬆️</button>
+    </div>
+    <div class="btn-row">
+      <button onclick="move('left')">⬅️</button>
+      <button onclick="move('down')">⬇️</button>
+      <button onclick="move('right')">➡️</button>
+    </div>
+    <button onclick="resetGame()">🔄 Reset</button>
   </div>
-  <div id="msg"></div>
-  <audio id="trapSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-  <audio id="flagSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+  <div id="message"></div>
 
   <script>
-    const maze = document.getElementById("maze");
-    const msg = document.getElementById("msg");
-    const trapSound = document.getElementById("trapSound");
-    const flagSound = document.getElementById("flagSound");
+    const maze = document.getElementById('maze');
+    const message = document.getElementById('message');
+    const size = 10;
+    let playerX = 0;
+    let playerY = 0;
+    let trapTiles = [];
+    let flagTile;
 
-    const gridSize = 10;
-    const totalTiles = gridSize * gridSize;
-    let playerPos = 0;
-    let flagPos = 87; // Set the real flag position
-    const traps = [15, 22, 34, 46, 59, 66, 70];
+    function coordToIndex(x, y) {
+      return y * size + x;
+    }
 
-    function drawMaze() {
-      maze.innerHTML = "";
-      for (let i = 0; i < totalTiles; i++) {
-        const div = document.createElement("div");
-        div.classList.add("tile");
-        if (i === playerPos) div.classList.add("player");
-        if (visited.has(i)) div.classList.add("visited");
-        maze.appendChild(div);
+    function generateMaze() {
+      maze.innerHTML = '';
+      trapTiles = [];
+      for (let i = 0; i < size * size; i++) {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        maze.appendChild(tile);
+      }
+
+      // Place traps (random 10 tiles excluding (0,0))
+      while (trapTiles.length < 10) {
+        let tx = Math.floor(Math.random() * size);
+        let ty = Math.floor(Math.random() * size);
+        if ((tx !== 0 || ty !== 0)) {
+          let tCoord = `${tx},${ty}`;
+          if (!trapTiles.includes(tCoord)) trapTiles.push(tCoord);
+        }
+      }
+
+      // Place flag (ensure not on trap or start)
+      do {
+        flagTile = {
+          x: Math.floor(Math.random() * size),
+          y: Math.floor(Math.random() * size),
+        };
+      } while (trapTiles.includes(`${flagTile.x},${flagTile.y}`) || (flagTile.x === 0 && flagTile.y === 0));
+
+      renderMaze();
+    }
+
+    function renderMaze() {
+      const tiles = maze.children;
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const index = coordToIndex(x, y);
+          const tile = tiles[index];
+          tile.className = 'tile';
+
+          if (x === playerX && y === playerY) {
+            tile.classList.add('player');
+          } else if (tile.classList.contains('revealed')) {
+            tile.classList.add('visited');
+          }
+        }
       }
     }
 
-    const visited = new Set();
+    function move(direction) {
+      let newX = playerX;
+      let newY = playerY;
 
-    function move(dir) {
-      let x = playerPos % gridSize;
-      let y = Math.floor(playerPos / gridSize);
-      switch (dir) {
-        case 'up': if (y > 0) playerPos -= gridSize; break;
-        case 'down': if (y < gridSize - 1) playerPos += gridSize; break;
-        case 'left': if (x > 0) playerPos -= 1; break;
-        case 'right': if (x < gridSize - 1) playerPos += 1; break;
-      }
-      visited.add(playerPos);
-      checkTile();
-      drawMaze();
-    }
+      if (direction === 'up' && playerY > 0) newY--;
+      if (direction === 'down' && playerY < size - 1) newY++;
+      if (direction === 'left' && playerX > 0) newX--;
+      if (direction === 'right' && playerX < size - 1) newX++;
 
-    function checkTile() {
-      if (playerPos === flagPos) {
-        msg.innerHTML = "<b>FLAG:</b> flag{you_found_the_protocol}";
-        flagSound.play();
-      } else if (traps.includes(playerPos)) {
-        msg.textContent = "Oops... dead end. Try again.";
-        trapSound.play();
+      const newCoord = `${newX},${newY}`;
+      const tile = maze.children[coordToIndex(newX, newY)];
+      tile.classList.add('revealed');
+
+      if (trapTiles.includes(newCoord)) {
+        tile.classList.add('trap');
+        message.innerText = 'You triggered a trap! Back to start.';
+        playerX = 0;
+        playerY = 0;
+      } else if (newX === flagTile.x && newY === flagTile.y) {
+        tile.classList.add('flag');
+        message.innerText = 'flag{you_found_the_protocol}';
+        playerX = newX;
+        playerY = newY;
       } else {
-        msg.textContent = "Exploring...";
+        playerX = newX;
+        playerY = newY;
+        message.innerText = '';
       }
+
+      renderMaze();
     }
 
-    function resetMaze() {
-      playerPos = 0;
-      visited.clear();
-      visited.add(playerPos);
-      msg.textContent = "Maze reset. Begin exploration.";
-      drawMaze();
+    function resetGame() {
+      playerX = 0;
+      playerY = 0;
+      message.innerText = '';
+      generateMaze();
     }
 
-    visited.add(playerPos);
-    drawMaze();
+    generateMaze();
   </script>
 </body>
 </html>
