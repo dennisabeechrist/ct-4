@@ -82,34 +82,39 @@
     }
 
     function handleClick(e) {
-      const index = parseInt(e.target.dataset.index);
-      if (index === order[currentIndex]) {
-        e.target.classList.add('correct');
-        e.target.classList.remove('wrong');
-        e.target.classList.add('done');
-        e.target.removeEventListener('click', handleClick);
-        currentIndex++;
-        status.textContent = `Correct! ${totalTiles - currentIndex} steps remaining.`;
-        if (currentIndex === totalTiles) {
-          status.textContent = "You've cracked the code!";
-          flag.style.display = 'block';
-        }
-      } else {
-        e.target.classList.add('wrong');
-        setTimeout(() => {
-          e.target.classList.remove('wrong');
-        }, 300);
-        status.textContent = 'Wrong tile! Try again...';
+    const index = parseInt(e.target.dataset.index);
+    if (index === order[currentIndex]) {
+      e.target.classList.add('correct');
+      e.target.classList.remove('wrong');
+      e.target.classList.add('done');
+      e.target.removeEventListener('click', handleClick);
+      currentIndex++;
+      status.textContent = `Correct! ${totalTiles - currentIndex} steps remaining.`;
+      if (currentIndex === totalTiles) {
+        status.textContent = "You've cracked the code!";
+        flag.style.display = 'block';
       }
+    } else {
+      e.target.classList.add('wrong');
+      setTimeout(() => {
+        e.target.classList.remove('wrong');
+      }, 300);
+      status.textContent = 'Wrong tile! Try again...';
+  
+      // RESET PROGRESS AND UI
+      currentIndex = 0;
+      flag.style.display = 'none';
+      status.textContent += ' Pattern reset. Start again!';
+      
+      // Clear all tiles
+      const tiles = document.querySelectorAll('.tile');
+      tiles.forEach(tile => {
+        tile.classList.remove('correct', 'done', 'wrong');
+        tile.addEventListener('click', handleClick);
+      });
     }
+  }
 
-    for (let i = 0; i < totalTiles; i++) {
-      const tile = document.createElement('div');
-      tile.classList.add('tile');
-      tile.dataset.index = i;
-      tile.addEventListener('click', handleClick);
-      grid.appendChild(tile);
-    }
   </script>
 </body>
 </html>
