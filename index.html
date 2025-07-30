@@ -12,9 +12,7 @@
       text-align: center;
       padding-top: 50px;
     }
-    h1 {
-      color: #00ffcc;
-    }
+    h1 { color: #00ffcc; }
     #grid {
       display: grid;
       grid-template-columns: repeat(5, 80px);
@@ -35,15 +33,9 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    .tile.correct {
-      background-color: #004d4d;
-    }
-    .tile.wrong {
-      background-color: #ff0033;
-    }
-    .tile.done {
-      background-color: #00cc66;
-    }
+    .tile.correct { background-color: #004d4d; }
+    .tile.wrong { background-color: #ff0033; }
+    .tile.done { background-color: #00cc66; }
     #status {
       margin-top: 20px;
       font-size: 18px;
@@ -70,7 +62,6 @@
     const status = document.getElementById('status');
     const flag = document.getElementById('flag');
 
-    // Generate a random shuffled order of tile indices
     const order = shuffle([...Array(totalTiles).keys()]);
     let currentIndex = 0;
 
@@ -97,26 +88,19 @@
         }
       } else {
         e.target.classList.add('wrong');
-        setTimeout(() => {
-          e.target.classList.remove('wrong');
-        }, 300);
         status.textContent = 'Wrong tile! Try again... Pattern reset. Start again!';
-
-        // Reset progress and UI
-        currentIndex = 0;
-        flag.style.display = 'none';
-        status.textContent += ' Pattern reset. Start again!';
-
-        // Clear all tile states and re-enable clicks
-        const tiles = document.querySelectorAll('.tile');
-        tiles.forEach(tile => {
-          tile.classList.remove('correct', 'done', 'wrong');
-          tile.addEventListener('click', handleClick);
-        });
+        setTimeout(() => {
+          currentIndex = 0;
+          flag.style.display = 'none';
+          const tiles = document.querySelectorAll('.tile');
+          tiles.forEach(tile => {
+            tile.classList.remove('correct', 'done', 'wrong');
+            tile.addEventListener('click', handleClick);
+          });
+        }, 350);
       }
     }
 
-    // Initialize the grid tiles with event listeners
     for (let i = 0; i < totalTiles; i++) {
       const tile = document.createElement('div');
       tile.classList.add('tile');
