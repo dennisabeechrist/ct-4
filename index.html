@@ -59,7 +59,7 @@ const mazeDiv = document.getElementById("maze"), messageEl = document.getElement
 let grid, player, flags = [], win = false;
 
 const EMOJIS = { player: "🤖", flag: "🚩" };
-const directions = [
+const dirOffsets = [
   [0,-1], [0,1], [-1,0], [1,0],     // up, down, left, right
   [-1,-1], [1,-1], [-1,1], [1,1]    // diagonals: q,e,z,c
 ];
@@ -73,32 +73,53 @@ const dirKeys = {
   "z": [-1,1],  "Z": [-1,1],
   "c": [1,1],   "C": [1,1]
 };
-
 function rng(n){return Math.floor(Math.random()*n);}
-function shuffle(a){for(let i=a.length-1;i>0;i--) {let j=rng(i+1);[a[i],a[j]]=[a[j],a[i]];}}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=rng(i+1);[a[i],a[j]]=[a[j],a[i]];}}
 function resetMaze(){
-  win=false; grid = Array.from({length: SIZE}, ()=>Array(SIZE).fill(WALL));
-  // Maze gen (DFS), always solvable, loads of dead-ends
-  let st=[[0,0]]; grid[0][0]=PATH;
-  while(st.length){
-    let [x,y]=st[st.length-1], dirs=[];
-    for(let [dx,dy] of [[0,2],[2,0],[-2,0],[0,-2]]) {
-      let nx = x+dx, ny = y+dy;
-      if(nx>=0&&ny>=0&&nx<SIZE&&ny<SIZE&&grid[ny][nx]===WALL) dirs.push([nx,ny]);
-    }
-    if(dirs.length){
-      let [nx,ny]=dirs[rng(dirs.length)];
-      grid[(ny+y)/2][(nx+x)/2]=PATH; grid[ny][nx]=PATH; st.push([nx,ny]);
-    } else st.pop();
-  }
+  win=false;
+  grid = Array.from({length: SIZE}, ()=>Array(SIZE).fill(WALL));
+  wilsonMaze(grid,0,0);
   // Place player, flags
   player={x:0, y:0}; flags=[];
   let empties = [];
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)
-    if(grid[y][x]==PATH&&(x!=0||y!=0)) empties.push([x,y]);
+    if(grid[y][x]==PATH&&(x!==0||y!==0)) empties.push([x,y]);
   shuffle(empties);
   for(let i=0;i<NUMFLAGS;i++) flags.push(empties.pop());
   draw(); message("Maze loaded. Good luck!");
+}
+// Wilson's Algorithm for a bushy, unpredictable maze
+function wilsonMaze(board,sx,sy){
+  let N=board.length,U=[0,1,2,3]; // up,down,left,right
+  let onTree = {}; onTree[sy*N+sx] = true;
+  let cells = [];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(!(x==sx&&y==sy))cells.push([x,y]);
+  while(cells.length){
+    let idx = rng(cells.length), [x0,y0]=cells.splice(idx,1)[0], walk=[], seen={};
+    let x=x0,y=y0;
+    walk.push([x,y]);
+    seen[y*N+x]=0;
+    // random walk until hitting maze
+    while(!onTree[y*N+x]){
+      let dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+      let d = dirs[rng(dirs.length)];
+      let nx=x+d[0], ny=y+d[1];
+      if(nx>=0&&ny>=0&&nx<N&&ny<N){
+        x=nx; y=ny;
+        if(seen[y*N+x]!==undefined){
+          walk = walk.slice(0,seen[y*N+x]+1);
+        } else {
+          walk.push([x,y]); seen[y*N+x]=walk.length-1;
+        }
+      }
+    }
+    // add walk to maze
+    for(let i=0;i<walk.length-1;i++){
+      let [x1,y1]=walk[i], [x2,y2]=walk[i+1];
+      board[y1][x1]=PATH; board[y2][x2]=PATH;
+      onTree[y1*N+x1]=onTree[y2*N+x2]=true;
+    }
+  }
 }
 function tt(x,y){
   if(x===player.x&&y===player.y) return "player";
