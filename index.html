@@ -1,456 +1,456 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Maze Protocol - HackPulse CTF</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maze Protocol+ - HackPulse CTF</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-    /* Reset & base */
-    * {
-      box-sizing: border-box;
-      user-select: none;
-    }
+    html,body{ height: 100%; }
     body {
-      margin: 0; padding: 0;
-      background: #000000;
+      margin:0; padding:0;
+      min-height:100vh;
+      background: #050915;
       font-family: 'Share Tech Mono', monospace;
       color: #00ff99;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
+      display: flex; flex-direction:column; align-items: center;
     }
-    h1 {
-      margin: 1rem 0 0.25rem;
-      font-weight: 400;
-      font-size: 2.5rem;
-      text-shadow:
-        0 0 10px #00ff99,
-        0 0 20px #00ff99,
-        0 0 30px #00ff99;
-    }
-    p {
-      margin: 0 0 1rem 0;
-      max-width: 600px;
-      text-align: center;
-      font-size: 1rem;
-      line-height: 1.3;
-      color: #33ffbbdd;
-      text-shadow: 0 0 6px #006644;
-    }
+    h1 { margin: 1rem 0 0.25rem; font-weight: 400; font-size: 2.5rem;
+      letter-spacing: 2px;
+      text-shadow:0 0 10px #00ff99,0 0 20px #00ff99,0 0 30px #00ff99;}
     #maze {
-      margin: 1rem 0 1.5rem 0;
-      display: grid;
-      grid-template-columns: repeat(10, 45px);
-      grid-template-rows: repeat(10, 45px);
-      gap: 4px;
-      border: 2px solid #00ff99;
-      padding: 8px;
-      border-radius: 10px;
-      box-shadow:
-        0 0 15px #00ff99,
-        inset 0 0 10px #007755;
-      background: #01110d;
+      margin:1.4rem 0 1.5rem 0;
+      display:grid;
+      grid-template-columns: repeat(10, 40px);
+      grid-template-rows: repeat(10, 40px);
+      gap:5px;
+      border:2.5px solid #00ff99;
+      border-radius:10px;
+      box-shadow:0 0 18px #00ff99, inset 0 0 10px #007755; background:#070f0f;
       user-select: none;
+      transition: filter 0.3s;
     }
     .tile {
-      width: 45px;
-      height: 45px;
-      background: #111;
-      border-radius: 6px;
-      box-shadow:
-        inset 0 0 6px #004422,
-        0 0 8px #00663333;
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-      position: relative;
+      width:40px; height:40px; border-radius:6px;
+      background:#112;
+      box-shadow:inset 0 0 6px #00ff9970, 0 0 8px #00ff9920;
+      position:relative;
+      overflow:hidden;
+      transition: background .3s, box-shadow .3s, border .16s;
     }
-    .tile.visited {
-      background: #022b1a;
-      box-shadow:
-        inset 0 0 8px #00ff99aa,
-        0 0 12px #00ff9977;
+
+    .tile.wall {  /* Wall */
+      background: #162526;
+      border:2.5px solid #00ff9933;
+      box-shadow:0 0 8px #00bbaa30 inset;
+      pointer-events:none;
     }
+
+    .tile.visited { background: #0b3e30;}
+
     .tile.player {
       background: #00ff99;
-      box-shadow:
-        0 0 12px #00ff99,
-        0 0 20px #00ff99,
-        inset 0 0 14px #00ffaaee;
-      animation: pulse 2s infinite alternate ease-in-out;
+      box-shadow:0 0 18px #00ff99, 0 0 30px #00ff99,
+        inset 0 0 16px #00ffaa;
+      z-index:2; animation:pulse 1.8s infinite alternate; font-weight:700;
+      color:#070f0f;
     }
-    @keyframes pulse {
-      0% { box-shadow:
-        0 0 12px #00ff99,
-        0 0 20px #00ff99,
-        inset 0 0 14px #00ffaaee;
-      }
-      100% { box-shadow:
-        0 0 24px #00ff99,
-        0 0 40px #00ff99,
-        inset 0 0 28px #00ffaaee;
-      }
-    }
+    @keyframes pulse {0%{box-shadow:0 0 14px #00ff99;}100%{box-shadow:0 0 28px #00ff99;}}
+
     .tile.trap {
-      background: #8b0000;
-      box-shadow:
-        0 0 12px #ff2200,
-        inset 0 0 14px #ff5533aa;
+      background: #a1162a;
+      box-shadow:0 0 16px #ff2200, inset 0 0 18px #ff7533;
+      border:2.5px solid #880a11;
+      z-index: 0;
     }
-    .tile.flag {
+
+    .tile.flag, .tile.fakeflag {
       background: #00ff7f;
-      box-shadow:
-        0 0 14px #00ff7f,
-        0 0 30px #00ff7f;
-      position: relative;
+      box-shadow:0 0 16px #00ff7f, 0 0 36px #00ff7f;
     }
     .tile.flag::after {
-      content: "🏁";
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      font-size: 1.3rem;
+      content:'🏁'; position:absolute; top:4px; right:4px; font-size:1.3em;
       text-shadow: 0 0 6px #00ff7f;
     }
-    #controls {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      user-select: none;
+    .tile.fakeflag{ background:#2fffbe; }
+    .tile.fakeflag::after{
+      content:'❓'; position:absolute; top:5px; right:7px; font-size:1.08em;
+      color:#bfff; text-shadow:0 0 7px #0ff;
     }
-    .btn-row {
-      display: flex;
-      gap: 12px;
+
+    .tile.teleport{
+      background: #9933ff;
+      box-shadow:0 0 25px #c155ff, 0 0 45px #7300dd;
     }
-    button {
-      background: #002211;
-      border: 1.5px solid #00ff99;
-      border-radius: 6px;
-      padding: 12px 22px;
-      color: #00ff99;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 1.2rem;
-      cursor: pointer;
-      box-shadow:
-        0 0 8px #00ff99aa;
-      transition: background-color 0.3s, box-shadow 0.3s;
+    .tile.teleport::after{ content:'⊛';position:absolute; bottom:8px; left:12px;
+      font-size:1.1em;color:#fff; text-shadow:0 0 9px #bb3fff;
     }
-    button:hover:not(:disabled) {
-      background: #00ff99;
-      color: #002211;
-      box-shadow:
-        0 0 14px #00ff99ff;
+    .tile.showtrap { border: 2.5px dashed #ff6b10; } /* For revealed traps */
+
+    /* Controls/ UI */
+    #controls { display: flex; flex-direction: column; align-items: center; gap:12px; }
+    .btn-row{display:flex; gap:12px;}
+    button { cursor:pointer;
+      background: #00170f; border:1.8px solid #00ffa9; border-radius:6px;
+      padding: 11px 24px; color:#00ff99; font-family:inherit; font-size:1.19rem;
+      box-shadow:0 0 8px #01ffa933;
+      transition: background .25s, box-shadow .22s;
+      font-weight:800; letter-spacing:.03em;
     }
-    button:disabled {
-      opacity: 0.3;
-      cursor: default;
-      box-shadow: none;
-      color: #004422;
+    button:hover:not(:disabled){ background: #00ff99; color:#051913;
+      box-shadow:0 0 14px #00ff99ff;}
+    button:disabled{ opacity:.5; color:#666; box-shadow:none;}
+
+    #message { margin:.9rem 0 0 0; font-size:1.22rem; min-height:29px;
+      font-weight:600; color:#00ff99; text-shadow:0 0 6px #00aa66; text-align:center }
+
+    #extraStats{
+      margin:.3rem 0 0; font-size:.97rem; color:#00bb77cc; letter-spacing:.09em;
+      text-align:center;
     }
-    #message {
-      margin-top: 1rem;
-      font-size: 1.25rem;
-      min-height: 28px;
-      color: #00ff99;
-      text-shadow: 0 0 6px #00aa66;
-      text-align: center;
-      user-select: text;
-      font-weight: 600;
-    }
-    #stats {
-      margin-top: 0.8rem;
-      font-size: 1rem;
-      color: #00bb77cc;
-      letter-spacing: 0.1em;
-      font-weight: 400;
-      font-family: 'Courier New', Courier, monospace;
-      text-align: center;
-      user-select: none;
-    }
-    #hintBtn {
-      background: #004422;
-      border-color: #00cc77;
-      font-weight: 700;
-      user-select: none;
-      width: 160px;
-      transition: background-color 0.3s;
-    }
-    #hintBtn:hover:not(:disabled) {
-      background: #00cc77;
-      color: #003311;
-    }
+    #level { font-size:1.6rem; color:#3fff8f; font-weight:800;}
+    #timer { font-size:1.2rem; color:#fffdc7;}
+    #leaderboard { margin-top:1.1rem; font-size:1.05em; }
+    #leaderboard li { color: #88ffcf; margin:.1em 0; font-family:monospace;}
+    #hintBtn {background: #004a22; border-color: #00cc77;}
+    #stats {margin-top:.3rem; font-size:1.08rem;}
   </style>
 </head>
 <body>
-  <h1>Maze Protocol</h1>
-  <p>
-    Navigate through the digital labyrinth.<br />
-    One tile holds the truth — the <strong>flag</strong>.<br />
-    Beware of traps. Use arrow keys or buttons to move.<br />
-    You have <span id="hintCount">3</span> hints available.
-  </p>
+  <h1>Maze Protocol <span style="font-size:1.1em; color:#39ffa2;">+</span></h1>
+  <div style="text-align:center;color:#33ffbbdd;max-width:620px;margin-bottom:.6rem;">
+    Solve the maze for the <strong>flag</strong>.<br/>
+    Escape walls, traps, and puzzles. <br>
+    Beat the level before time runs out! Use <b>arrow keys</b> 🕹 or <b>buttons</b> ⬆️⬇️⬅️➡️ to move.<br>
+    Hints left: <span id="hintCount">3</span> | Level <span id="level">1</span>
+  </div>
 
   <div id="maze" aria-label="Maze grid"></div>
 
   <div id="controls" role="region" aria-label="Maze controls">
+    <div class="btn-row"><button id="btnUp">⬆️ Up</button></div>
     <div class="btn-row">
-      <button aria-label="Move up" id="btnUp">⬆️</button>
+      <button id="btnLeft">⬅️ Left</button>
+      <button id="btnDown">⬇️ Down</button>
+      <button id="btnRight">➡️ Right</button>
     </div>
-    <div class="btn-row">
-      <button aria-label="Move left" id="btnLeft">⬅️</button>
-      <button aria-label="Move down" id="btnDown">⬇️</button>
-      <button aria-label="Move right" id="btnRight">➡️</button>
-    </div>
-    <button id="btnReset">🔄 Reset</button>
+    <button id="btnReset">🔄 New Maze</button>
     <button id="hintBtn">💡 Hint</button>
+    <button id="btnShowTraps">Reveal Traps</button>
   </div>
-
   <div id="message" role="alert" aria-live="polite"></div>
-  <div id="stats">Moves: 0</div>
+  <div id="extraStats">
+    <span id="stats">Moves: 0</span> | <span id="timer">Time: 90</span>s
+  </div>
+  <ol id="leaderboard"></ol>
 
   <audio id="trapSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
   <audio id="flagSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+  <audio id="teleSound" src="https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar_boing.ogg" preload="auto"></audio>
+  <audio id="failSound" src="https://actions.google.com/sounds/v1/cartoon/boat_horn.ogg" preload="auto"></audio>
 
   <script>
-    const maze = document.getElementById('maze');
-    const message = document.getElementById('message');
-    const stats = document.getElementById('stats');
-    const hintBtn = document.getElementById('hintBtn');
-    const hintCountSpan = document.getElementById('hintCount');
-    const trapSound = document.getElementById('trapSound');
-    const flagSound = document.getElementById('flagSound');
-
+    // ======================
+    // GAME CONFIG
+    // ======================
     const SIZE = 10;
-    let playerX = 0;
-    let playerY = 0;
+    let LEVEL = 1;
+    let grid = [];
+    let playerPos = { x: 0, y: 0 };
+    let flagPos = null;
+    let fakeFlagPos = [];
+    let trapTiles = [];
+    let visitedTiles = new Set();
+    let teleportTiles = [];
+    let revealedTraps = new Set();
+    let timerInterval = null;
+    let timerVal = 90;
+    let timerDefault = 90;
     let moves = 0;
     let hintsLeft = 3;
+    let bestScores = []; // For session leaderboard
 
-    let trapTiles = [];
-    let flagTile = null;
+    // DOM
+    const maze = document.getElementById('maze');
+    const stats = document.getElementById('stats');
+    const levelSpan = document.getElementById('level');
+    const message = document.getElementById('message');
+    const hintBtn = document.getElementById('hintBtn');
+    const hintCountSpan = document.getElementById('hintCount');
+    const timerEl = document.getElementById('timer');
+    const leaderboard = document.getElementById('leaderboard');
+    const trapSound = document.getElementById('trapSound');
+    const flagSound = document.getElementById('flagSound');
+    const teleSound = document.getElementById('teleSound');
+    const failSound = document.getElementById('failSound');
+    const btnShowTraps = document.getElementById('btnShowTraps');
 
-    // Returns index in 1D array from 2D coords
-    function idx(x, y) {
-      return y * SIZE + x;
-    }
-
-    function randomCoord(exclude = []) {
-      while (true) {
-        const x = Math.floor(Math.random() * SIZE);
-        const y = Math.floor(Math.random() * SIZE);
-        const str = `${x},${y}`;
-        if (!exclude.includes(str)) return { x, y };
-      }
-    }
-
-    function generateMaze() {
-      maze.innerHTML = '';
-      trapTiles = [];
-
-      // Create tiles
-      for (let i = 0; i < SIZE * SIZE; i++) {
-        const div = document.createElement('div');
-        div.classList.add('tile');
-        div.setAttribute('data-index', i);
-        div.setAttribute('aria-label', `Maze tile ${i + 1}`);
-        maze.appendChild(div);
-      }
-
-      // Place traps, 12 traps, excluding start (0,0)
-      while (trapTiles.length < 12) {
-        let t = randomCoord(['0,0']);
-        let tStr = `${t.x},${t.y}`;
-        if (!trapTiles.includes(tStr)) trapTiles.push(tStr);
-      }
-
-      // Place flag, exclude traps and start
-      let flagPos;
-      do {
-        flagPos = randomCoord(['0,0', ...trapTiles]);
-      } while (trapTiles.includes(`${flagPos.x},${flagPos.y}`));
-      flagTile = flagPos;
-
-      moves = 0;
-      playerX = 0;
-      playerY = 0;
-      hintsLeft = 3;
-      hintCountSpan.textContent = hintsLeft;
-
-      updateMaze();
-      updateMessage("Begin your journey... Use arrows or buttons.");
-      updateStats();
-      updateHintButton();
-    }
-
-    function updateMaze() {
-      const tiles = maze.children;
-      for (let y = 0; y < SIZE; y++) {
-        for (let x = 0; x < SIZE; x++) {
-          const i = idx(x, y);
-          const tile = tiles[i];
-          tile.className = 'tile'; // reset classes
-
-          if (x === playerX && y === playerY) {
-            tile.classList.add('player');
-          } else if (trapTiles.includes(`${x},${y}`)) {
-            // traps only reveal if player is adjacent or tile visited previously
-            if (isAdjacentOrVisited(x, y)) {
-              tile.classList.add('trap');
-            }
-          } else if (x === flagTile.x && y === flagTile.y) {
-            // flag reveals only if adjacent or player on tile
-            if (x === playerX && y === playerY) {
-              tile.classList.add('flag');
-            } else if (isAdjacentOrVisited(x, y)) {
-              // subtle glowing outline for flag nearby but not on tile
-              tile.style.boxShadow = "0 0 8px 2px #00ff7f88 inset";
-            } else {
-              tile.style.boxShadow = '';
-            }
-          }
-        }
-      }
-    }
-
-    // Tile is adjacent or player visited it
-    let visitedTiles = new Set();
-    visitedTiles.add("0,0");
-
-    function isAdjacentOrVisited(x, y) {
-      if (visitedTiles.has(`${x},${y}`)) return true;
-      const dx = Math.abs(x - playerX);
-      const dy = Math.abs(y - playerY);
-      return (dx + dy) === 1;
-    }
-
-    function move(direction) {
-      let nx = playerX;
-      let ny = playerY;
-      switch (direction) {
-        case 'up': if (playerY > 0) ny--; break;
-        case 'down': if (playerY < SIZE - 1) ny++; break;
-        case 'left': if (playerX > 0) nx--; break;
-        case 'right': if (playerX < SIZE - 1) nx++; break;
-      }
-      // If no movement, ignore
-      if (nx === playerX && ny === playerY) return;
-
-      const coordStr = `${nx},${ny}`;
-
-      // If trap, reset position and play sound
-      if (trapTiles.includes(coordStr)) {
-        trapSound.currentTime = 0;
-        trapSound.play();
-        updateMessage("🚨 Trap triggered! Resetting to start...");
-        playerX = 0; playerY = 0;
-        moves++;
-        visitedTiles.clear();
-        visitedTiles.add("0,0");
-        updateStats();
-        updateMaze();
-        return;
-      }
-
-      // Move player
-      playerX = nx;
-      playerY = ny;
-      moves++;
-      visitedTiles.add(coordStr);
-
-      if (playerX === flagTile.x && playerY === flagTile.y) {
-        flagSound.currentTime = 0;
-        flagSound.play();
-        updateMessage("🎉 Congratulations! You found the flag: <strong>flag{you_found_the_protocol}</strong>");
-        updateStats();
-        updateMaze();
-        disableControls();
-        return;
-      }
-
-      updateMessage("Exploring...");
-      updateStats();
-      updateMaze();
-    }
-
-    function updateMessage(msg) {
-      message.innerHTML = msg;
-    }
-
-    function updateStats() {
-      stats.textContent = `Moves: ${moves}`;
-    }
-
-    function resetGame() {
-      enableControls();
-      generateMaze();
-    }
-
-    function disableControls() {
-      btnUp.disabled = true;
-      btnDown.disabled = true;
-      btnLeft.disabled = true;
-      btnRight.disabled = true;
-      hintBtn.disabled = true;
-    }
-    function enableControls() {
-      btnUp.disabled = false;
-      btnDown.disabled = false;
-      btnLeft.disabled = false;
-      btnRight.disabled = false;
-      hintBtn.disabled = false;
-    }
-
-    function giveHint() {
-      if (hintsLeft <= 0) {
-        updateMessage("❌ No hints left!");
-        return;
-      }
-      hintsLeft--;
-      hintCountSpan.textContent = hintsLeft;
-
-      // Give a subtle hint — Manhattan distance to flag tile
-      const dist = Math.abs(flagTile.x - playerX) + Math.abs(flagTile.y - playerY);
-      if (dist === 0) {
-        updateMessage("You are on the flag tile!");
-      } else if (dist <= 3) {
-        updateMessage("🔥 You're very close to the flag!");
-      } else if (dist <= 6) {
-        updateMessage("🌟 The flag is within a few moves.");
-      } else {
-        updateMessage("💡 The flag lies far, keep exploring.");
-      }
-    }
-
+    // DIRECTION helpers
+    const DELTAS = { up:{x:0, y:-1}, down:{x:0, y:1}, left:{x:-1,y:0}, right:{x:1, y:0} };
     // Keyboard support
     window.addEventListener('keydown', e => {
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
-        e.preventDefault();
-        switch (e.key) {
-          case 'ArrowUp': move('up'); break;
-          case 'ArrowDown': move('down'); break;
-          case 'ArrowLeft': move('left'); break;
-          case 'ArrowRight': move('right'); break;
-        }
+        e.preventDefault(); move(e.key.replace('Arrow','').toLowerCase());
       }
     });
-
-    // Button event bindings
-    const btnUp = document.getElementById('btnUp');
-    const btnDown = document.getElementById('btnDown');
-    const btnLeft = document.getElementById('btnLeft');
-    const btnRight = document.getElementById('btnRight');
-    const btnReset = document.getElementById('btnReset');
-
-    btnUp.onclick = () => move('up');
-    btnDown.onclick = () => move('down');
-    btnLeft.onclick = () => move('left');
-    btnRight.onclick = () => move('right');
-    btnReset.onclick = resetGame;
+    // Button events
+    document.getElementById('btnUp').onclick = () => move('up');
+    document.getElementById('btnDown').onclick = () => move('down');
+    document.getElementById('btnLeft').onclick = () => move('left');
+    document.getElementById('btnRight').onclick = () => move('right');
+    document.getElementById('btnReset').onclick = () => { LEVEL=1; startGame(); };
     hintBtn.onclick = giveHint;
+    btnShowTraps.onclick = revealTrapsTemporarily;
 
-    generateMaze();
+    // ==============
+    // MAZE GENERATION (Random with walls)
+    // Using simple randomized DFS "maze generation"
+    // ==============
+    function generateEmptyGrid() {
+      // Returns 2D array, "wall" everywhere.
+      let arr = [];
+      for(let y=0;y<SIZE;y++) {
+        let row = [];
+        for(let x=0;x<SIZE;x++) row.push({type:'wall', visited:false});
+        arr.push(row);
+      }
+      return arr;
+    }
+    function getNeighbors(x, y) {
+      // Returns list of possible neighbors for maze carve
+      let dirs = [];
+      if (x>=2) dirs.push({x:x-2,y:y});
+      if (x<=SIZE-3) dirs.push({x:x+2,y:y});
+      if (y>=2) dirs.push({x:x,y:y-2});
+      if (y<=SIZE-3) dirs.push({x:x,y:y+2});
+      return dirs;
+    }
+    function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { let j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]];} }
+    function carveMaze(x, y) {
+      grid[y][x].type = 'empty';
+      grid[y][x].visited = true;
+      let neighbors = getNeighbors(x, y);
+      shuffle(neighbors);
+      for (const n of neighbors) {
+        if (!grid[n.y][n.x].visited) {
+          // Break wall between x,y and n.x,n.y
+          grid[(y+n.y)/2][(x+n.x)/2].type = 'empty';
+          carveMaze(n.x, n.y);
+        }
+      }
+    }
+    function genMazeWithFeatures() {
+      // 1. Maze generation: start from 0,0
+      grid = generateEmptyGrid();
+      for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) grid[y][x].visited = false;
+      carveMaze(0,0);
+
+      // 2. Place flag at farthest reachable point from (0,0).
+      let explore = [[0,0,0]], farthest = [0,0,0], seen = new Set(["0,0"]);
+      while(explore.length > 0){
+        let [x, y, steps] = explore.pop();
+        if (steps > farthest[2]) farthest = [x, y, steps];
+        for(let d of Object.values(DELTAS)){
+          let nx=x+d.x, ny=y+d.y;
+          if(nx<0||ny<0||nx>=SIZE||ny>=SIZE) continue;
+          if(grid[ny][nx].type!='empty') continue;
+          let k=`${nx},${ny}`; if(seen.has(k)) continue;
+          explore.push([nx,ny,steps+1]); seen.add(k);
+        }
+      }
+      flagPos = {x:farthest[0],y:farthest[1]};
+
+      // 3. Place traps (LEVEL+8) in random empty spaces not start/flag
+      let empties = [];
+      for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++)
+        if((x!==0||y!==0)&&(x!==flagPos.x||y!==flagPos.y) && grid[y][x].type==='empty')
+          empties.push({x,y});
+      shuffle(empties);
+      trapTiles = empties.slice(0, Math.min(LEVEL+8, empties.length)).map(({x,y})=>[x,y]);
+      
+      // 4. Place fake flag decoys (2 per level)
+      let rest = empties.slice(trapTiles.length);
+      shuffle(rest); fakeFlagPos = rest.slice(0, Math.min(2, rest.length)).map(({x,y})=>[x,y]);
+
+      // 5. Place teleport tiles (LEVEL>=2)
+      teleportTiles = [];
+      if (LEVEL >= 2) {
+        shuffle(rest);
+        let tp = rest.slice(2,2+LEVEL);
+        teleportTiles = tp.map(({x,y})=>[x,y]);
+      }
+
+      // 6. Mark grid with features for easy draw
+      for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++){
+        grid[y][x].trap=false; grid[y][x].flag=false; grid[y][x].player=false;
+        grid[y][x].fakeflag=false; grid[y][x].teleport=false;
+        // walls remain as grid[y][x].type = 'wall'
+      }
+      grid[0][0].player=true;
+      grid[flagPos.y][flagPos.x].flag=true;
+      for(const [x,y] of trapTiles) grid[y][x].trap=true;
+      for(const [x,y] of fakeFlagPos) grid[y][x].fakeflag=true;
+      for(const [x,y] of teleportTiles) grid[y][x].teleport=true;
+    }
+
+    // =========
+    // GAME/RENDER
+    // =========
+    function drawMaze() {
+      maze.innerHTML = '';
+      for(let y=0; y<SIZE; y++){
+        for(let x=0; x<SIZE; x++){
+          let div = document.createElement('div');
+          div.className = 'tile';
+          if(grid[y][x].type === 'wall') div.classList.add('wall');
+          if(grid[y][x].player) div.classList.add('player');
+          if(grid[y][x].trap && (revealedTraps.has(`${x},${y}`) || playerPos.x === x && playerPos.y === y)) div.classList.add('trap');
+          if(grid[y][x].flag && playerPos.x === x && playerPos.y === y) div.classList.add('flag');
+          // Show decoy if step on
+          if(grid[y][x].fakeflag && playerPos.x === x && playerPos.y === y) div.classList.add('fakeflag');
+          // Faint hint where trap revealed
+          if(grid[y][x].trap && revealedTraps.has(`${x},${y}`)) div.classList.add('showtrap');
+          if(grid[y][x].teleport && playerPos.x === x && playerPos.y === y) div.classList.add('teleport');
+          div.setAttribute('data-x', x); div.setAttribute('data-y', y);
+          if(visitedTiles.has(`${x},${y}`)) div.classList.add('visited');
+          maze.appendChild(div);
+        }
+      }
+    }
+
+    function startGame() {
+      moves=0; hintsLeft=3; timerDefault=90+LEVEL*8; timerVal=timerDefault;
+      levelSpan.textContent=LEVEL;
+      playerPos={x:0, y:0}; visitedTiles=new Set(["0,0"]); revealedTraps.clear();
+      genMazeWithFeatures();
+      drawMaze();
+      drawStats();
+      updateMessage('🟩 Begin your journey! Beat the maze before time ends!');
+      updateHintBtn();
+      resetTimer();
+      enableControls();
+    }
+
+    function drawStats() {
+      stats.textContent=`Moves: ${moves}`;
+      hintCountSpan.textContent=hintsLeft;
+      timerEl.textContent=`Time: ${timerVal}`;
+    }
+    function updateMessage(txt, color) {
+      message.innerHTML=txt;
+      message.style.color=color||"#00ff99";
+    }
+
+    function move(direction) {
+      if (!DELTAS[direction]) return;
+      let nx=playerPos.x+DELTAS[direction].x, ny=playerPos.y+DELTAS[direction].y;
+      if(nx<0||ny<0||nx>=SIZE||ny>=SIZE) return;
+      if(grid[ny][nx].type === 'wall') {
+        updateMessage('🚧 Can’t move through walls!',"#ffaa1a"); failSound.play();
+        return;
+      }
+      playerPos={x:nx,y:ny}; moves++;
+      visitedTiles.add(`${nx},${ny}`);
+
+      // --- Special tile logic
+      if(grid[ny][nx].trap) {
+        trapSound.currentTime=0;trapSound.play();
+        updateMessage("🔥 Trap triggered! Sent back to start.");
+        playerPos={x:0,y:0}; moves++;
+        visitedTiles=new Set(["0,0"]);
+      } else if (grid[ny][nx].flag) {
+        // WIN!
+        flagSound.play();
+        finishLevel();
+        return;
+      } else if (grid[ny][nx].fakeflag) {
+        updateMessage("❌ Fake flag! Keep searching..."); failSound.play();
+      } else if (grid[ny][nx].teleport){
+        // Teleport to random empty spot!
+        teleSound.currentTime=0; teleSound.play();
+        let empties=[];for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)
+            if(grid[y][x].type==='empty'&&!(x===playerPos.x&&y===playerPos.y))
+                empties.push({x,y});
+        let tmp=empties[Math.floor(Math.random()*empties.length)];
+        updateMessage("🔮 Warp! Teleported across the maze...");
+        playerPos={x:tmp.x,y:tmp.y};
+        visitedTiles.add(`${tmp.x},${tmp.y}`);
+      } else {
+        updateMessage("Exploring...");
+      }
+
+      drawStats();
+      drawMaze();
+    }
+
+    function finishLevel() {
+      updateMessage(`🎉 <b>You found the flag!</b> <br>
+        <span style="color:#fff;background:#170; padding:2px 5px; border-radius:4px;">
+          flag{maze_proto_lvl${LEVEL}}
+        </span><br>
+        Level cleared in <b>${moves}</b> moves and <b>${timerDefault-timerVal+1}</b>s!
+        <br>Press Reset/New Maze to continue.`);
+      clearInterval(timerInterval);
+      bestScores.push({level:LEVEL, moves, time:timerDefault-timerVal+1});
+      showLeaderboard();
+      enableControls(false);
+      LEVEL++;
+    }
+    function showLeaderboard(){
+      leaderboard.innerHTML = "<b>Leaderboard (session):</b>";
+      const sorted = bestScores.slice().sort((a,b)=>a.level-b.level);
+      for(const s of sorted)
+        leaderboard.innerHTML += `<li>Level ${s.level}: <b>${s.moves}</b> moves in <b>${s.time}s</b></li>`;
+    }
+
+    function giveHint() {
+      if(hintsLeft<=0){ updateMessage("❌ No hints left!","#ff431a"); return;}
+      hintsLeft--;
+      // Give hint: show closest direction to flag
+      let dx = flagPos.x - playerPos.x, dy = flagPos.y - playerPos.y;
+      let dir = (Math.abs(dx)>Math.abs(dy)) ? (dx>0?"right":"left")
+               : (dy>0? "down":"up");
+      let dist = Math.abs(dx)+Math.abs(dy);
+      if (dist<=1) updateMessage("🌟 You're right next to the flag!","#ff0");
+      else updateMessage(`💡 Hint: Head <b>${dir.toUpperCase()}</b>. <span style="color:#68ffa9;">(Dist: ${dist})</span>`);
+      updateHintBtn();
+    }
+    function updateHintBtn() {
+      hintBtn.disabled = (hintsLeft<=0);
+      hintCountSpan.textContent=hintsLeft;
+    }
+
+    function revealTrapsTemporarily() {
+      // Reveal all traps for 3s
+      for(const [x,y] of trapTiles) revealedTraps.add(`${x},${y}`);
+      drawMaze(); btnShowTraps.disabled=true;
+      setTimeout(()=>{
+        revealedTraps.clear(); drawMaze(); btnShowTraps.disabled=false;
+      }, 3000);
+      updateMessage("Traps revealed for 3 seconds!");
+    }
+
+    function resetTimer(){ clearInterval(timerInterval); timerVal=timerDefault; timerEl.textContent=`Time: ${timerVal}`; 
+      timerInterval=setInterval(()=>{
+        timerVal--;
+        timerEl.textContent=`Time: ${timerVal}`;
+        if(timerVal<=0) { clearInterval(timerInterval); updateMessage("⏰ Time up! Reset for new maze.","#ff4b99"); enableControls(false);}
+      },1000);
+    }
+    function enableControls(val=true){
+      hintBtn.disabled=!val; 
+      document.getElementById('btnUp').disabled=!val;
+      document.getElementById('btnDown').disabled=!val;
+      document.getElementById('btnLeft').disabled=!val;
+      document.getElementById('btnRight').disabled=!val;
+      btnShowTraps.disabled=!val;
+      // Reset always enabled!
+    }
+
+    // =========
+    // INIT
+    // =========
+    startGame();
   </script>
 </body>
 </html>
