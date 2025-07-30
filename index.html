@@ -11,48 +11,64 @@ body {
   margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
 }
 h1 { margin:1.1rem 0 .5rem 0; font-size:2.15rem; text-shadow: 0 0 12px #00ff9970;}
-#message {font-size:1.1em; margin:.7em 0;height:1.4em; min-height:1.4em; color:#43fa94;}
+#message {font-size:1.24em;margin:.7em 0;min-height:2.0em;color:#43fa94;text-align:center;position:relative;}
 #maze {
   margin:.4em 0 1.4em 0;
   display:grid;
-  grid-template-columns: repeat(20,22px);
-  grid-template-rows: repeat(20,22px);
-  gap:2.4px;
+  grid-template-columns: repeat(20,28px);
+  grid-template-rows: repeat(20,28px);
+  gap:2.6px;
   background:#010813; border-radius:1.6em;
   box-shadow:0 0 23px #00ff9970, 0 0 13px #00ff9960 inset;
   outline:1.7px solid #00ff9951;
   user-select:none;
-  max-width:99vw;
-  overflow:auto;
+  max-width:99vw; overflow:auto;
 }
-.tile {width:22px;height:22px;border-radius:5px;background:#14262b;display:flex;align-items:center;justify-content:center; font-size:.97em; font-family:inherit;}
+.tile {
+  width:28px; height:28px; border-radius:7px; background:#14262b;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.3em; font-family:inherit; position:relative;
+}
 .tile.wall {background:#334;}
-.tile.player {background:#0ef5ce; color:#29222a; box-shadow:0 0 10px #29fff7aa;}
-.tile.visited {background:#23423f;}
-.tile.flag {background:#fefd79; color:#415704; font-weight:700; box-shadow:0 0 12px #eaff43cc;}
-.tile.fakeflag {background:#58e4ea; color:#092e3c; font-weight:700;}
-.tile.trap {background:#b70e2b; color:#fff;}
-.tile.teleport {background:#9933ff; color:#fff;}
+.tile.player {background:#0ef5ce;color:#29222a;box-shadow:0 0 10px #29fff7aa;z-index:2;}
+.tile.visited {background:#22423c;}
+.tile.flag {background:#fefd79; color:#415704; font-weight:700; box-shadow:0 0 13px #eaff43cc; z-index:10; border:2.5px solid #a8ad0c;}
+.tile.flag .icon {font-size:1.21em;position: relative;z-index:11;}
+.tile.fakeflag {background:#58e4ea;color:#074c50; font-weight:700;}
+.tile.trap {background:#b70e2b;color:#fff;}
+.tile.teleport {background:#9933ff;color:#fff;}
 .tile.deadend {background:#1c2427;}
-button { margin:.17em .18em; font-size:.97em; background:#003211; border:1.2px solid #00faa7; color:#fff; border-radius:5px;min-width:2.2em;padding:.18em .6em; font-family:inherit;}
+.emojiover {position:absolute;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;z-index:20;pointer-events:none;}
+button {margin:.17em .18em; font-size:.97em; background:#003211; border:1.2px solid #00faa7; color:#fff; border-radius:5px;min-width:2.2em;padding:.18em .6em; font-family:inherit;}
 </style>
 </head>
 <body>
 <h1>Maze Protocol: CTF Challenge</h1>
 <div id="message"></div>
-<div style="font-size:1em;max-width:550px;line-height:1.2;text-align:center">
-  Use <b>Arrows</b> or <b>WASD</b> to navigate to the real <span style="color:#f6ff41">🏁 flag</span>.<br>
-  Avoid <span style="color:#e95">traps (💀)</span>, ignore <span style="color:#1be">fakes (🚩)</span>, and don't trust teleports (<span style="color:#c6f">🟣</span>)...<br>
-  <b>R = Reset (new hard maze)</b>.
+<div style="font-size:1em;max-width:600px;line-height:1.25;text-align:center">
+  Use <b>Arrows</b> or <b>WASD</b> to navigate to the real <span style="color:#f6ff41;font-size:1.02em;">🏁 flag</span>.<br>
+  Avoid <span style="color:#e95;">traps (💀)</span>, ignore <span style="color:#1be;">fakes (🚩)</span>, and don't trust teleports (<span style="color:#c6f;">🟣</span>)...<br>
+  <b>R = Reset (new maze)</b>.
 </div>
-<div id="maze"></div>
+<div id="maze" tabindex="0" aria-label="CTF Maze game grid"></div>
 <div>
-<button onclick="resetMaze()">Reset (R)</button>
+  <button onclick="resetMaze()">Reset (R)</button>
 </div>
+<audio id="s_trap" src="https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar_boing.ogg" preload="auto"></audio>
+<audio id="s_flag" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+<audio id="s_fake" src="https://actions.google.com/sounds/v1/cartoon/siren_whistle.ogg" preload="auto"></audio>
+<audio id="s_tele" src="https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar_boing.ogg" preload="auto"></audio>
 <script>
 const SIZE=20, WALL="#", PATH=".", DANGEROUSNESS=30, FAKEFLAGS=8, TELEPORTS=3;
 const mazeDiv=document.getElementById("maze"),messageEl=document.getElementById("message");
-let grid,player,flag,fakeFlags=[],traps=[],teleports=[],visited,win=false; // state
+let grid,player,flag,fakeFlags=[],traps=[],teleports=[],visited,win=false;
+
+const S_TRAP=document.getElementById("s_trap"),S_FLAG=document.getElementById("s_flag"),S_FAKE=document.getElementById("s_fake"),S_TELE=document.getElementById("s_tele");
+
+// To ensure emoji always displays: use <span class="icon">🏁</span> everywhere possible
+const emojis = {
+  player:"🤖", flag:"<span class='icon'>🏁</span>", trap:"💀", fakeflag:"🚩", teleport:"🟣", deadend:"·"
+};
 
 function rng(n){return Math.floor(Math.random()*n);}
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
@@ -60,12 +76,11 @@ function resetMaze(){
   win=false;grid=[...Array(SIZE)].map(()=>Array(SIZE).fill(WALL));
   visited=[...Array(SIZE)].map(()=>Array(SIZE).fill(false));
   // DFS maze gen
-  let st=[[0,0]];
-  grid[0][0]=PATH;
+  let st=[[0,0]]; grid[0][0]=PATH;
   while(st.length){
     let[x,y]=st[st.length-1],dirs=[];
     for(let[dx,dy] of [[0,2],[2,0],[-2,0],[0,-2]]){
-      let nx=x+dx, ny=y+dy;
+      let nx=x+dx,ny=y+dy;
       if(nx>=0&&ny>=0&&nx<SIZE&&ny<SIZE&&grid[ny][nx]===WALL)dirs.push([nx,ny]);
     }
     if(dirs.length){
@@ -75,7 +90,7 @@ function resetMaze(){
       st.push([nx,ny]);
     } else st.pop();
   }
-  // Find hardest (farthest) cell for flag
+  // Find hardest/farthest cell for flag
   let explore=[[0,0,0]], farthest=[0,0,0], seen=new Set(["0,0"]);
   while(explore.length){
     let[x,y,steps]=explore.pop();
@@ -84,15 +99,10 @@ function resetMaze(){
       let nx=x+dx,ny=y+dy; if(nx<0||ny<0||nx>=SIZE||ny>=SIZE)continue;
       if(grid[ny][nx]!=PATH)continue;
       let k=`${nx},${ny}`; if(seen.has(k))continue;
-      explore.push([nx,ny,steps+1]);seen.add(k);}
+      explore.push([nx,ny,steps+1]); seen.add(k);}
   }
   flag=[farthest[0],farthest[1]];
-  // Fill dead-ends to make maze long (time consuming, not just luck!)
-  let deads=0;
-  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(grid[y][x]==PATH){
-    let n=0;for(let[dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){let nx=x+dx,ny=y+dy;if(nx>=0&&ny>=0&&nx<SIZE&&ny<SIZE&&grid[ny][nx]==PATH)n++;}
-    if(n<=1&&!(x==0&&y==0)&&!(x==flag[0]&&y==flag[1])){deads++;}} // many dead ends
-  // Place player, special tiles
+  // Place more dead ends for real difficulty
   player={x:0,y:0};visited[0][0]=true;fakeFlags=[];traps=[];teleports=[];
   let empties=[];for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)
     if(grid[y][x]==PATH&&(x!=0||y!=0)&&(x!=flag[0]||y!=flag[1]))empties.push([x,y]);
@@ -112,16 +122,8 @@ function tt(x,y){
   if(grid[y][x]==PATH&&n<=1&&!(x==0&&y==0)&&(x!=flag[0]||y!=flag[1]))return "deadend";
   return grid[y][x]==WALL?"wall":visited[y][x]?"visited":"";
 }
-function emojiTile(type,x,y){
-  switch(type){
-    case "player": return "🤖";
-    case "flag": return "🏁";
-    case "trap": return "💀";
-    case "fakeflag": return "🚩";
-    case "teleport": return "🟣";
-    case "deadend": return "·";
-    default: return "";
-  }
+function emojiTile(type){
+  return emojis[type]||"";
 }
 function canEnter(nx,ny){
   if(nx<0||ny<0||nx>=SIZE||ny>=SIZE)return false;
@@ -134,16 +136,24 @@ function movePlayer(dx,dy){
   if(!canEnter(nx,ny))return;
   player={x:nx,y:ny};visited[ny][nx]=true;
   let t=tt(nx,ny);
-  if(t=="trap"){message("🔥 Trap! Back to start."); player={x:0,y:0};}
+  if(t=="trap"){message("🔥 Trap! Back to start."); player={x:0,y:0}; S_TRAP.currentTime=0; S_TRAP.play();}
   else if(t=="teleport"){
-    message("🟣 Teleport! Sent somewhere...");let opens=[];
-    for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)
-      if(grid[y][x]==PATH&&(x!=nx||y!=ny)&&!(x==flag[0]&&y==flag[1]))opens.push([x,y]);
+    message("🟣 Teleport! Sent somewhere..."); S_TELE.currentTime=0; S_TELE.play();
+    let opens=[];
+    for(let y=0;y<SIZE;y++)
+      for(let x=0;x<SIZE;x++)
+        if(grid[y][x]==PATH&&(x!=nx||y!=ny)&&!(x==flag[0]&&y==flag[1]))opens.push([x,y]);
     let [tx,ty]=opens[rng(opens.length)]; player={x:tx,y:ty};}
-  else if(t=="fakeflag"){message("❗️Decoy! Keep searching.");}
+  else if(t=="fakeflag"){message("❗️Decoy! Keep searching."); S_FAKE.currentTime=0;S_FAKE.play();}
   if(nx==flag[0]&&ny==flag[1]){
-    win=true;message("🏁 <b>You found the flag!</b><br><span style='color:#fff;background:#170; padding:2px 6px; border-radius:4px;'>flag{maze_ctf_master}</span>");
-    setTimeout(()=>{if(confirm("Play again?"))resetMaze();},1600);return;
+    win=true;S_FLAG.currentTime=0;S_FLAG.play();
+    draw();
+    setTimeout(()=>{document.querySelector(".tile.flag").innerHTML=
+      "<div class='emojiover'><span class='icon'>🏁</span></div>";
+      message("<b>🏁 You found the flag!</b><br><span style='color:#fff;background:#170; padding:2px 7px;border-radius:4px;'>flag{maze_ctf_master}</span>");
+    },25);
+    setTimeout(()=>{if(confirm("Play again?"))resetMaze();},1600);
+    return;
   }
   draw();
 }
@@ -152,19 +162,26 @@ function draw() {
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
     let td=tt(x,y),d=document.createElement("div");
     d.className="tile "+td; d.tabIndex=-1;
-    d.innerHTML=emojiTile(td,x,y);
+    d.innerHTML=emojiTile(td);
     mazeDiv.appendChild(d);
   }
 }
 function message(txt){messageEl.innerHTML=txt;}
+function focusMaze(){mazeDiv.focus();}
 window.addEventListener("keydown",e=>{
+  // let arrows not scroll page!
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)){
+    e.preventDefault();
+    focusMaze();
+  }
   if(["ArrowUp","w","W"].includes(e.key))movePlayer(0,-1);
   if(["ArrowDown","s","S"].includes(e.key))movePlayer(0,1);
   if(["ArrowLeft","a","A"].includes(e.key))movePlayer(-1,0);
   if(["ArrowRight","d","D"].includes(e.key))movePlayer(1,0);
   if(e.key==="r"||e.key==="R")resetMaze();
 });
-resetMaze();
+mazeDiv.addEventListener("click",focusMaze);
+window.onload=() => { focusMaze(); resetMaze();}
 </script>
 </body>
 </html>
