@@ -3,75 +3,72 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CTF Maze - Hard</title>
+<title>CTF Maze — All Flags</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 body {
   background: #04090f; color: #00ff99;
-  font-family: 'Share Tech Mono', monospace; margin: 0;
-  min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+  font-family: 'Share Tech Mono', monospace;
+  margin: 0; min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
 }
-h1 { margin: 1.1rem 0 .35rem 0; font-size: 2.1rem; text-shadow: 0 0 14px #00ff9970;}
-#message {font-size: 1.21em; margin: .63em 0; height: 1.7em; min-height: 1.7em; color: #43fa94;text-align:center;}
+h1 { margin: 1.1rem 0 .45rem 0; font-size: 2.18rem; text-shadow: 0 0 12px #00ff9970;}
+#message {font-size: 1.18em; margin: .72em 0; min-height: 1.54em; color: #41fa94; text-align: center;}
 #maze {
   margin: .28em 0 1.2em 0;
   display: grid;
-  grid-template-columns: repeat(24, 22px);
-  grid-template-rows: repeat(24, 22px);
-  gap: 2px;
-  background: #011415; border-radius: 1.1em;
-  box-shadow: 0 0 30px #00ff9970, 0 0 13px #00ff9955 inset;
-  outline: 1.5px solid #00ff9942;
+  grid-template-columns: repeat(32, 17px);
+  grid-template-rows: repeat(32, 17px);
+  gap: 1.8px;
+  background: #011019; border-radius: 1.1em;
+  box-shadow: 0 0 20px #00ff9970, 0 0 10px #00ff9957 inset;
+  outline: 1.18px solid #00ff992a;
   user-select: none; max-width: 99vw; overflow: auto;
 }
 .tile {
-  width: 22px; height: 22px; border-radius: 5px; background: #14262b;
+  width: 17px; height: 17px; border-radius: 4px; background: #17282d;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.07em; font-family: inherit; position: relative;
+  font-size: .95em; font-family: inherit; position: relative;
 }
-.tile.wall {background: #232334;}
-.tile.player {background: #0ef5ce; color: #29222a; box-shadow: 0 0 10px #29fff7aa; z-index: 2;}
-.tile.visited {background: #215442;}
-.tile.flag {background: #fde35d; color: #3a5107; font-weight: 700; box-shadow: 0 0 14px #f6ff43c0; border: 2px solid #c7c700;}
-.tile.fakeflag {background: #69ede8; color: #155c60; font-weight: 700;}
-.tile.trap {background: #b70e2b; color: #fff;}
-.tile.teleport {background: #9933ff; color: #fff;}
-.tile.deadend {background: #232d29;}
-button {margin:.14em .15em; font-size:.97em; background:#003211; border:1.2px solid #00faa7;
-  color:#fff; border-radius:5px;min-width:2.2em;padding:.15em .5em; font-family:inherit;}
-@media (max-width: 900px) {
-  #maze { grid-template-columns: repeat(24, minmax(8px,1fr)); }
-  .tile { width: 12px; height: 12px; font-size: .88em;}
+.tile.wall { background: #253035; }
+.tile.player { background: #0ef5ce; color: #071917; box-shadow: 0 0 7px #29fff7aa; z-index: 2; }
+.tile.visited { background: #194340; }
+.tile.flag { background: #93e6e1; color: #274357; font-weight: 700; box-shadow: 0 0 7px #a6ffe7cc;}
+button { margin: .14em .10em; font-size: .97em; background: #003211; border: 1.2px solid #00faa7;
+  color: #fff; border-radius: 5px; min-width: 2.1em; padding: .12em .5em; font-family: inherit;}
+@media (max-width: 950px) {
+  #maze { grid-template-columns: repeat(32, minmax(7px,1fr)); }
+  .tile { width: 9px; height: 9px; font-size: .73em;}
 }
 </style>
 </head>
 <body>
-<h1>CTF Maze: The Hard One</h1>
+<h1>CTF Maze: Pure Flag Hunt</h1>
 <div id="message"></div>
-<div style="font-size:1em;max-width:700px;line-height:1.25;text-align:center;color:#d0ffe0">
-  Use <b>Arrows</b> or <b>WASD</b> to navigate to the <span style="color:#e6f23a;">🏁</span>.<br>
-  Avoid <span style="color:#f86;">traps (💀)</span>, ignore <span style="color:#1be;">fakes (🚩)</span>, and don't trust <span style="color:#c6f;">🟣</span>...<br>
-  <b>R = Reset (new maze)</b>.
+<div style="font-size:1em;max-width:900px;line-height:1.22;text-align:center;color:#99ffd0">
+  Use <b>Arrows</b> or <b>WASD</b> to collect <span style="font-size:1.04em;">🚩 flags</span>.<br>
+  There’s no "real" flag—all flags are equal. Find them all!<br>
+  Huge maze, tons of flags, *no traps, no teleports, no skulls, only exploration*.<br>
+  <b>R = Reset (new hard maze)</b>.
 </div>
 <div id="maze" tabindex="0" aria-label="CTF Maze grid"></div>
 <div>
   <button onclick="resetMaze()">Reset (R)</button>
 </div>
 <script>
-const SIZE=24, WALL="#", PATH=".", TRAPS=60, FAKEFLAGS=15, TELEPORTS=6;
+const SIZE=32, WALL="#", PATH=".", NUMFLAGS=25;
 const mazeDiv=document.getElementById("maze"),messageEl=document.getElementById("message");
-let grid,player,flag,fakeFlags=[],traps=[],teleports=[],visited,win=false;
+let grid, player, flags=[], visited, win=false;
 
-// Unicode emoji always used for maximum compatibility!
-const emojis = {
-  player:"🤖", flag:"🏁", trap:"💀", fakeflag:"🚩", teleport:"🟣", deadend:"·"
-};
+const EMOJIS = { player:"🤖", flag:"🚩" };
+
+// Utility
 function rng(n){return Math.floor(Math.random()*n);}
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=rng(i+1);[a[i],a[j]]=[a[j],a[i]];}}
 function resetMaze(){
-  win=false;grid=[...Array(SIZE)].map(()=>Array(SIZE).fill(WALL));
+  win=false; grid=[...Array(SIZE)].map(()=>Array(SIZE).fill(WALL));
   visited=[...Array(SIZE)].map(()=>Array(SIZE).fill(false));
-  // DFS maze gen
+  // DFS maze gen — always solvable, with many dead-ends for difficulty
   let st=[[0,0]]; grid[0][0]=PATH;
   while(st.length){
     let[x,y]=st[st.length-1],dirs=[];
@@ -84,40 +81,23 @@ function resetMaze(){
       grid[(ny+y)/2][(nx+x)/2]=PATH; grid[ny][nx]=PATH; st.push([nx,ny]);
     } else st.pop();
   }
-  // Farthest cell for flag
-  let explore=[[0,0,0]], farthest=[0,0,0], seen=new Set(["0,0"]);
-  while(explore.length){
-    let[x,y,steps]=explore.pop();
-    if(steps>farthest[2])farthest=[x,y,steps];
-    for(let [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){
-      let nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=SIZE||ny>=SIZE)continue;
-      if(grid[ny][nx]!=PATH)continue;
-      let k=`${nx},${ny}`; if(seen.has(k))continue;
-      explore.push([nx,ny,steps+1]); seen.add(k);}
-  }
-  flag=[farthest[0],farthest[1]];
-  player={x:0,y:0};visited[0][0]=true;fakeFlags=[];traps=[];teleports=[];
-  let empties=[];for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)
-    if(grid[y][x]==PATH&&(x!=0||y!=0)&&(x!=flag[0]||y!=flag[1]))empties.push([x,y]);
+  // Place player and flags
+  player={x:0,y:0}; visited[0][0]=true; flags=[];
+  let empties=[];
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)
+    if(grid[y][x]==PATH&&(x!=0||y!=0))empties.push([x,y]);
   shuffle(empties);
-  for(let i=0;i<FAKEFLAGS;i++)fakeFlags.push(empties.pop());
-  for(let i=0;i<TRAPS;i++)traps.push(empties.pop());
-  for(let i=0;i<TELEPORTS;i++)teleports.push(empties.pop());
-  draw(); message("Maze loaded. Get that flag!");
+  for(let i=0;i<NUMFLAGS;i++) flags.push(empties.pop());
+  draw(); message(`Maze loaded. Find and collect all <b>${NUMFLAGS}</b> flags!`);
 }
 
-// Renders class for each tile according to game state
+// Returns tile class
 function tt(x,y){
   if(x===player.x&&y===player.y)return "player";
-  if(x===flag[0]&&y===flag[1])return "flag";
-  for(let[fx,fy]of fakeFlags)if(x==fx&&y==fy)return "fakeflag";
-  for(let[tx,ty]of traps)if(x==tx&&y==ty)return "trap";
-  for(let[tx,ty]of teleports)if(x==tx&&y==ty)return "teleport";
-  let n=0;for(let[dx,dy]of [[0,1],[1,0],[-1,0],[0,-1]]){let nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=SIZE||ny>=SIZE)continue;if(grid[ny][nx]==PATH)n++;}
-  if(grid[y][x]==PATH&&n<=1&&!(x==0&&y==0)&&(x!=flag[0]||y!=flag[1]))return "deadend";
+  for(let [fx,fy] of flags) if(x==fx&&y==fy) return "flag";
   return grid[y][x]==WALL?"wall":visited[y][x]?"visited":"";
 }
-function emojiTile(type){return emojis[type]||"";}
+function emojiTile(type){return EMOJIS[type]||"";}
 
 function canEnter(nx,ny){
   if(nx<0||ny<0||nx>=SIZE||ny>=SIZE)return false;
@@ -129,26 +109,27 @@ function movePlayer(dx,dy){
   let nx=player.x+dx,ny=player.y+dy;
   if(!canEnter(nx,ny))return;
   player={x:nx,y:ny};visited[ny][nx]=true;
-  let t=tt(nx,ny);
-  if(t=="trap"){message("🔥 Trap! Back to start."); player={x:0,y:0};}
-  else if(t=="teleport"){
-    message("🟣 Teleport! Sent somewhere...");
-    let opens=[];
-    for(let y=0;y<SIZE;y++)
-      for(let x=0;x<SIZE;x++)
-        if(grid[y][x]==PATH&&(x!=nx||y!=ny)&&!(x==flag[0]&&y==flag[1]))opens.push([x,y]);
-    let [tx,ty]=opens[rng(opens.length)]; player={x:tx,y:ty};}
-  else if(t=="fakeflag"){message("❗️Fake. Not this one!");}
+  let gotFlag=false;
+  for(let i=0;i<flags.length;i++){
+    if(nx==flags[i][0]&&ny==flags[i][1]){
+      flags.splice(i,1); gotFlag=true; break;
+    }
+  }
   draw();
-  if(nx==flag[0]&&ny==flag[1]){
-    win=true;
-    // Always draw flag bold and visually prominent!
-    document.querySelectorAll(".tile.flag").forEach(d=>{
-      d.innerHTML = '<span style="font-size:1.19em;z-index:2;position:relative;">🏁</span>';
-    });
-    message("<b>🏁 You found the flag!</b><br><span style='color:#fff;background:#170; padding:2px 7px;border-radius:4px;'>flag{maze_ctf_master}</span>");
-    setTimeout(()=>{if(confirm("Play again?"))resetMaze();},1700);
-    return;
+  if(gotFlag){
+    if(flags.length==0){
+      win=true;
+      document.querySelectorAll(".tile.player").forEach(d=>{
+        d.innerHTML = `<span style="font-size:1.09em;z-index:2;position:relative;">🤖</span>`;
+      });
+      message("<b>🚩 Congrats, you found every flag!</b><br><span style='color:#fff;background:#176; padding:2px 7px;border-radius:5px;'>flag{all_ctf_flags_collected}</span>");
+      setTimeout(()=>{if(confirm("Play again?"))resetMaze();},1600);
+      return;
+    } else {
+      message(`<span style="color:#ffe;font-size:1.18em">🚩</span> Flag collected! <b>${flags.length}</b> remaining.`);
+    }
+  } else {
+    message(`${flags.length} flag${flags.length==1?"":"s"} left. Keep exploring!`);
   }
 }
 function draw() {
@@ -160,14 +141,11 @@ function draw() {
     mazeDiv.appendChild(d);
   }
 }
-// Make sure game stays focused so arrows/WASD always control player, not window.
 function message(txt){messageEl.innerHTML=txt;}
 function focusMaze(){mazeDiv.focus();}
 window.addEventListener("keydown",e=>{
   // Prevent arrows from scrolling page
-  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)){
-    e.preventDefault(); focusMaze();
-  }
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)){e.preventDefault();focusMaze();}
   if(["ArrowUp","w","W"].includes(e.key))movePlayer(0,-1);
   if(["ArrowDown","s","S"].includes(e.key))movePlayer(0,1);
   if(["ArrowLeft","a","A"].includes(e.key))movePlayer(-1,0);
