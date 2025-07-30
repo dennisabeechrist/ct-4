@@ -27,13 +27,13 @@
       height: 80px;
       background-color: #1f1f1f;
       border: 2px solid #00ffcc;
-      color: #00ffcc;
+      color: transparent;
       font-size: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: 0.2s;
+      transition: background-color 0.2s;
     }
     .tile.correct {
       background-color: #004d4d;
@@ -96,6 +96,9 @@
         }
       } else {
         e.target.classList.add('wrong');
+        setTimeout(() => {
+          e.target.classList.remove('wrong');
+        }, 300);
         status.textContent = 'Wrong tile! Try again...';
       }
     }
@@ -104,7 +107,6 @@
       const tile = document.createElement('div');
       tile.classList.add('tile');
       tile.dataset.index = i;
-      tile.textContent = i + 1;
       tile.addEventListener('click', handleClick);
       grid.appendChild(tile);
     }
