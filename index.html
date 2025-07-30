@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Maze Protocol</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #0f0;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    #maze {
+      display: grid;
+      grid-template-columns: repeat(10, 30px);
+      grid-template-rows: repeat(10, 30px);
+      gap: 2px;
+      margin: 20px 0;
+    }
+    .tile {
+      width: 30px;
+      height: 30px;
+      background-color: #333;
+      border: 1px solid #000;
+    }
+    .player {
+      background-color: #0ff;
+    }
+    .visited {
+      background-color: #222;
+    }
+    #controls {
+      margin: 10px;
+    }
+    button {
+      background-color: #222;
+      color: #0f0;
+      border: 1px solid #0f0;
+      margin: 2px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    #msg {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Maze Protocol</h1>
+  <div id="maze"></div>
+  <div id="controls">
+    <button onclick="move('up')">⬆️</button><br>
+    <button onclick="move('left')">⬅️</button>
+    <button onclick="move('down')">⬇️</button>
+    <button onclick="move('right')">➡️</button>
+    <button onclick="resetMaze()">🔄 Reset</button>
+  </div>
+  <div id="msg"></div>
+  <audio id="trapSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+  <audio id="flagSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+  <script>
+    const maze = document.getElementById("maze");
+    const msg = document.getElementById("msg");
+    const trapSound = document.getElementById("trapSound");
+    const flagSound = document.getElementById("flagSound");
+
+    const gridSize = 10;
+    const totalTiles = gridSize * gridSize;
+    let playerPos = 0;
+    let flagPos = 87; // Set the real flag position
+    const traps = [15, 22, 34, 46, 59, 66, 70];
+
+    function drawMaze() {
+      maze.innerHTML = "";
+      for (let i = 0; i < totalTiles; i++) {
+        const div = document.createElement("div");
+        div.classList.add("tile");
+        if (i === playerPos) div.classList.add("player");
+        if (visited.has(i)) div.classList.add("visited");
+        maze.appendChild(div);
+      }
+    }
+
+    const visited = new Set();
+
+    function move(dir) {
+      let x = playerPos % gridSize;
+      let y = Math.floor(playerPos / gridSize);
+      switch (dir) {
+        case 'up': if (y > 0) playerPos -= gridSize; break;
+        case 'down': if (y < gridSize - 1) playerPos += gridSize; break;
+        case 'left': if (x > 0) playerPos -= 1; break;
+        case 'right': if (x < gridSize - 1) playerPos += 1; break;
+      }
+      visited.add(playerPos);
+      checkTile();
+      drawMaze();
+    }
+
+    function checkTile() {
+      if (playerPos === flagPos) {
+        msg.innerHTML = "<b>FLAG:</b> flag{you_found_the_protocol}";
+        flagSound.play();
+      } else if (traps.includes(playerPos)) {
+        msg.textContent = "Oops... dead end. Try again.";
+        trapSound.play();
+      } else {
+        msg.textContent = "Exploring...";
+      }
+    }
+
+    function resetMaze() {
+      playerPos = 0;
+      visited.clear();
+      visited.add(playerPos);
+      msg.textContent = "Maze reset. Begin exploration.";
+      drawMaze();
+    }
+
+    visited.add(playerPos);
+    drawMaze();
+  </script>
+</body>
+</html>
