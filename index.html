@@ -8,35 +8,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 body { background: #04090f; color: #00ff99; font-family: 'Share Tech Mono', monospace; margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
 h1 { margin: 1.1rem 0 .45rem 0; font-size: 2.18rem; text-shadow: 0 0 12px #00ff9970;}
-#message {font-size: 1.18em; margin: .72em 0; min-height: 1.54em; color: #41fa94; text-align: center;}
+#message {font-size: 1.14em; margin: .7em 0; min-height: 1.4em; color: #41fa94; text-align: center;}
 #maze {
-  margin: .28em 0 1.2em 0;
-  display: grid;
-  grid-template-columns: repeat(32, 17px);
-  grid-template-rows: repeat(32, 17px);
-  gap: 1.8px;
-  background: #011019; border-radius: 1.1em;
-  box-shadow: 0 0 20px #00ff9970, 0 0 10px #00ff9957 inset;
-  outline: 1.18px solid #00ff992a;
+  margin: .23em 0 1em 0; display: grid;
+  grid-template-columns: repeat(32, 16px); grid-template-rows: repeat(32, 16px);
+  gap: 1.5px; background: #011019; border-radius: 1.1em;
+  box-shadow: 0 0 18px #00ff9975, 0 0 8px #00ff9960 inset;
+  outline: 1.15px solid #00ff9917;
   user-select: none; max-width: 99vw; overflow: auto;
 }
-.tile { width: 17px; height: 17px; border-radius: 4px; background: #17282d;
+.tile { width: 16px; height: 16px; border-radius: 4px; background: #16272d;
   display: flex; align-items: center; justify-content: center;
-  font-size: .95em; font-family: inherit; position: relative; }
-.tile.wall { background: #253035; }
-.tile.player { background: #0ef5ce; color: #071917; box-shadow: 0 0 7px #29fff7aa; z-index: 2; }
-.tile.flag { background: #93e6e1; color: #274357; font-weight: 700; box-shadow: 0 0 7px #a6ffe7cc;}
-button { margin: .14em .10em; font-size: .97em; background: #003211; border: 1.2px solid #00faa7;
-  color: #fff; border-radius: 5px; min-width: 2.1em; padding: .12em .5em; font-family: inherit;}
-@media (max-width: 950px) { #maze { grid-template-columns: repeat(32, minmax(7px,1fr)); } .tile { width: 9px; height: 9px; font-size: .73em;} }
+  font-size: .89em; font-family: inherit; position: relative; transition: background .14s;}
+.tile.wall { background: #293036; }
+.tile.player { background: #0ef5ce; color: #071917; box-shadow: 0 0 7px #29fff7aa; z-index: 2;}
+.tile.flag { background: #7ee9d1; color: #224357; font-weight: 700; box-shadow: 0 0 7px #a6ffe7cc;}
+.arrow { position: absolute; font-size: 9px; opacity: .53; pointer-events: none;}
+.arrow.u { top:0; left:4px; }
+.arrow.d { bottom:0; left:4px; }
+.arrow.l { left:0; top:4px;}
+.arrow.r { right:0; top:4px;}
+.arrow.ul {left:1px;top:1px;}
+.arrow.ur {right:1px;top:1px;}
+.arrow.dl {left:1px;bottom:1px;}
+.arrow.dr {right:1px;bottom:1px;}
+button { margin: .15em .09em; font-size: .96em; background: #003211; border: 1.1px solid #00faa7;
+  color: #fff; border-radius: 5px; min-width: 2.0em; padding: .12em .5em; font-family: inherit;}
+@media (max-width: 950px) { #maze { grid-template-columns: repeat(32, minmax(6px,1fr)); } .tile { width: 8px; height: 8px; font-size: .73em;} }
 </style>
 </head>
 <body>
 <h1>CTF Maze</h1>
 <div id="message"></div>
-<div style="font-size:1em;max-width:850px;line-height:1.22;text-align:center;color:#99ffd0">
-  Use <b>Arrows</b>, <b>WASD</b>, or diagonals (<b>Q/E/Z/C</b>) to move.<br>
-  Find all the <span style="font-size:1.04em;">🚩 flags</span>. No hints, no trail, no flag count.<br>
+<div style="font-size:1em;max-width:900px;line-height:1.22;text-align:center;color:#99ffd0">
+  Move with Arrows/WASD/diagonals (Q/E/Z/C).<br>
+  Find all the <span style="font-size:1.04em;">🚩 flags</span>. Every cell may only allow movement in a random set of directions.<br>
   <b>R = Reset (new maze)</b>.
 </div>
 <div id="maze" tabindex="0" aria-label="CTF Maze grid"></div>
@@ -46,45 +52,12 @@ button { margin: .14em .10em; font-size: .97em; background: #003211; border: 1.2
 <script>
 const SIZE = 32, WALL = "#", PATH = ".", NUMFLAGS = 7;
 const mazeDiv = document.getElementById("maze"), messageEl = document.getElementById("message");
-let grid, player, flags = [], win = false;
+let grid, player, flags = [], win = false, movesAllowed = null;
 
 const EMOJIS = { player: "🤖", flag: "🚩" };
-
-// Utility
-function rng(n) { return Math.floor(Math.random() * n); }
-function shuffle(a){ for(let i=a.length-1;i>0;i--) { let j=rng(i+1); [a[i],a[j]]=[a[j],a[i]]; } }
-function resetMaze() {
-  win = false; grid = Array.from({length: SIZE}, ()=>Array(SIZE).fill(WALL));
-  // Maze gen (DFS, always solvable and with dead-ends)
-  let st = [[0,0]]; grid[0][0]=PATH;
-  while(st.length){
-    let [x,y]=st[st.length-1], dirs=[];
-    for(let [dx,dy] of [[0,2],[2,0],[-2,0],[0,-2]]) {
-      let nx=x+dx,ny=y+dy; if(nx>=0&&ny>=0&&nx<SIZE&&ny<SIZE&&grid[ny][nx]===WALL) dirs.push([nx,ny]);
-    }
-    if(dirs.length) {
-      let [nx,ny]=dirs[rng(dirs.length)];
-      grid[(ny+y)/2][(nx+x)/2]=PATH; grid[ny][nx]=PATH; st.push([nx,ny]);
-    } else st.pop();
-  }
-  // Place player, flags
-  player = {x:0, y:0}; flags = [];
-  let empties = [];
-  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)
-    if(grid[y][x]==PATH&&(x!=0||y!=0)) empties.push([x,y]);
-  shuffle(empties);
-  for(let i=0;i<NUMFLAGS;i++) flags.push(empties.pop());
-  draw(); message("Maze loaded. Good luck!");
-}
-function tt(x,y){
-  if(x===player.x&&y===player.y) return "player";
-  for(let [fx,fy] of flags) if(x==fx&&y==fy) return "flag";
-  return grid[y][x]==WALL?"wall":"";
-}
-function emojiTile(type){return EMOJIS[type]||"";}
-const directions = [
-  [0,-1], [0,1], [-1,0], [1,0],     // up, down, left, right
-  [-1,-1], [1,-1], [-1,1], [1,1]    // q,e,z,c diagonals
+const moves = [
+  [0, -1, 'u'], [0, 1, 'd'], [-1, 0, 'l'], [1, 0, 'r'],// up down left right
+  [-1,-1,'ul'], [1,-1,'ur'], [-1,1,'dl'], [1,1,'dr']     // diagonals: q,e,z,c
 ];
 const dirKeys = {
   "ArrowUp": [0,-1],   "w": [0,-1],  "W": [0,-1],
@@ -96,15 +69,70 @@ const dirKeys = {
   "z": [-1,1],  "Z": [-1,1],
   "c": [1,1],   "C": [1,1]
 };
-function canEnter(nx,ny){
+// Create random direction sets (uni, bi, tri) for each cell
+function randomDirections() {
+  // Possible move patterns: pick random 1-3 directions, always at least one cardinal
+  let picks = [[0],[1],[2],[3],[0,2],[1,3],[0,1],[2,3],[0,3],[1,2],[0,1,2],[1,2,3],[2,3,0],[3,0,1]];
+  let chosen = picks[Math.floor(Math.random()*picks.length)];
+  // chance for diagonals
+  if (Math.random()<.32) {
+    let diag = 4 + Math.floor(Math.random()*4); chosen = [...chosen,diag];
+  }
+  if (Math.random()<.1) {
+    let diag1 = 4 + Math.floor(Math.random()*4), diag2 = 4 + Math.floor(Math.random()*4);
+    if(diag2!=diag1) chosen=[...chosen,diag1,diag2];
+  }
+  return Array.from(new Set(chosen));
+}
+function resetMaze() {
+  win=false; grid = Array.from({length: SIZE}, ()=>Array(SIZE).fill(WALL));
+  movesAllowed = Array.from({length: SIZE}, ()=>Array(SIZE).fill(null));
+  // Maze gen (DFS), then assign random direction sets per cell
+  let st = [[0,0]]; grid[0][0]=PATH;
+  while(st.length){
+    let [x,y]=st[st.length-1], dirs=[];
+    for(let [dx,dy] of [[0,2],[2,0],[-2,0],[0,-2]]) {
+      let nx=x+dx,ny=y+dy; if(nx>=0&&ny>=0&&nx<SIZE&&ny<SIZE&&grid[ny][nx]===WALL) dirs.push([nx,ny]);
+    }
+    if(dirs.length) {
+      let [nx,ny]=dirs[rng(dirs.length)];
+      grid[(ny+y)/2][(nx+x)/2]=PATH; grid[ny][nx]=PATH; st.push([nx,ny]);
+    } else st.pop();
+  }
+  // Assign allowed moves for each room
+  for(let y=0;y<SIZE;y++) for(let x=0;x<SIZE;x++) {
+    if(grid[y][x] == PATH) {
+      movesAllowed[y][x] = randomDirections();
+    }
+  }
+  // Place player, flags
+  player = {x:0, y:0}; flags = [];
+  let empties = [];
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)
+    if(grid[y][x]==PATH&&(x!=0||y!=0)) empties.push([x,y]);
+  shuffle(empties); for(let i=0;i<NUMFLAGS;i++) flags.push(empties.pop());
+  draw(); message("Maze loaded. Good luck!");
+}
+function tt(x,y){
+  if(x===player.x&&y===player.y) return "player";
+  for(let [fx,fy] of flags) if(x==fx&&y==fy) return "flag";
+  return grid[y][x]==WALL?"wall":"";
+}
+function emojiTile(type){return EMOJIS[type]||"";}
+function canEnter(nx,ny,fromX,fromY){
   if(nx<0||ny<0||nx>=SIZE||ny>=SIZE) return false;
   if(grid[ny][nx]==WALL) return false;
+  // Only allow if FROM cell has the direction available
+  let dx = nx-fromX, dy = ny-fromY, code=null;
+  moves.forEach(([dx2,dy2,k],idx)=>{if(dx2==dx&&dy2==dy)code=idx;});
+  let allowed = movesAllowed[fromY][fromX];
+  if(!allowed || !allowed.includes(code)) return false;
   return true;
 }
 function movePlayer(dx,dy){
   if(win) return;
   let nx = player.x+dx, ny = player.y+dy;
-  if(!canEnter(nx,ny)) return;
+  if(!canEnter(nx,ny,player.x,player.y)) return;
   player={x:nx,y:ny};
   for(let i=0;i<flags.length;i++){
     if(nx==flags[i][0]&&ny==flags[i][1]){
@@ -116,9 +144,9 @@ function movePlayer(dx,dy){
   if(flags.length==0){
     win=true;
     document.querySelectorAll(".tile.player").forEach(d=>{
-      d.innerHTML = `<span style="font-size:1.10em;z-index:2;position:relative;">🤖</span>`;
+      d.innerHTML = `<span style="font-size:1.09em;z-index:2;position:relative;">🤖</span>`;
     });
-    message(`<b>🚩 All flags collected!</b><br><span style='color:#fff;background:#176;padding:2px 7px;border-radius:5px;'>flag{maze_full_flag_sweep}</span>`);
+    message(`<b>🚩 All flags collected!</b><br><span style='color:#fff;background:#176;padding:2px 7px;border-radius:5px;'>flag{maze_unmatched_escape}</span>`);
     setTimeout(()=>{if(confirm("Play again?"))resetMaze();},1600);
     return;
   }
@@ -127,9 +155,19 @@ function movePlayer(dx,dy){
 function draw() {
   mazeDiv.innerHTML="";
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
-    let td=tt(x,y),d=document.createElement("div");
-    d.className="tile "+td; d.tabIndex=-1;
+    let td=tt(x,y),d=document.createElement("div"); d.className="tile "+td; d.tabIndex=-1;
     d.innerHTML=emojiTile(td);
+    // Show faded arrows for available directions on *current* player cell (can remove next line for more mystery)
+    if(x===player.x && y===player.y) {
+      for(let idx of (movesAllowed[y][x]||[])) {
+        let [dx,dy,k] = moves[idx];
+        let arr = document.createElement("div"); arr.className="arrow "+k;
+        arr.innerHTML = k=="u"||k=="d" ? "↑↓" : k=="l"||k=="r" ? "←→"
+           : k=="ul"||k=="dr" ? "↖↘" : "↗↙";
+        arr.innerHTML = ({u:"↑",d:"↓",l:"←",r:"→",ul:"↖",ur:"↗",dl:"↙",dr:"↘"})[k];
+        d.appendChild(arr);
+      }
+    }
     mazeDiv.appendChild(d);
   }
 }
