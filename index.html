@@ -2,118 +2,111 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Codebreaker Grid</title>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      background-color: #0d0d0d;
+      background-color: #0f0f0f;
+      font-family: 'Courier New', monospace;
       color: #00ffcc;
-      font-family: 'Courier New', Courier, monospace;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+      text-align: center;
+      padding-top: 50px;
     }
-
     h1 {
-      margin-bottom: 20px;
-      color: #00ffff;
+      color: #00ffcc;
     }
-
     #grid {
       display: grid;
-      grid-template-columns: repeat(5, 60px);
-      grid-template-rows: repeat(5, 60px);
-      gap: 10px;
+      grid-template-columns: repeat(5, 80px);
+      grid-gap: 10px;
+      justify-content: center;
+      margin-top: 30px;
     }
-
-    .cell {
-      width: 60px;
-      height: 60px;
-      background-color: #1a1a1a;
+    .tile {
+      width: 80px;
+      height: 80px;
+      background-color: #1f1f1f;
       border: 2px solid #00ffcc;
-      cursor: pointer;
+      color: #00ffcc;
+      font-size: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #00ffcc;
-      font-weight: bold;
-      transition: all 0.3s ease;
+      cursor: pointer;
+      transition: 0.2s;
     }
-
-    .cell.correct {
+    .tile.correct {
       background-color: #004d4d;
     }
-
-    .cell.wrong {
-      background-color: #ff3333;
+    .tile.wrong {
+      background-color: #ff0033;
     }
-
+    .tile.done {
+      background-color: #00cc66;
+    }
     #status {
       margin-top: 20px;
-      color: #cccccc;
-    }
-
-    #flag {
-      margin-top: 10px;
       font-size: 18px;
-      color: #00ff99;
+    }
+    #flag {
+      margin-top: 20px;
+      font-size: 20px;
+      color: #00ffcc;
       display: none;
     }
   </style>
 </head>
 <body>
-  <h1>🔐 Codebreaker Grid</h1>
+  <h1>Codebreaker Grid</h1>
+  <p>Click the correct tiles in order to unlock the code.</p>
   <div id="grid"></div>
-  <div id="status">Click the correct sequence of tiles to reveal the flag.</div>
-  <div id="flag">🎉 Congratulations! Your flag is: <strong>flag{grid_master_1337}</strong></div>
+  <div id="status">Start breaking the code!</div>
+  <div id="flag">🎉 Flag: <strong>flag{tile_grid_master}</strong></div>
 
   <script>
     const gridSize = 5;
-    const correctSequence = ['0-0', '1-1', '2-2', '3-3', '4-4']; // Example: diagonal pattern
-    let currentIndex = 0;
-
+    const totalTiles = gridSize * gridSize;
     const grid = document.getElementById('grid');
     const status = document.getElementById('status');
     const flag = document.getElementById('flag');
 
-    // Create the grid
-    for (let row = 0; row < gridSize; row++) {
-      for (let col = 0; col < gridSize; col++) {
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        cell.dataset.position = `${row}-${col}`;
-        cell.addEventListener('click', handleCellClick);
-        grid.appendChild(cell);
+    const order = shuffle([...Array(totalTiles).keys()]);
+    let currentIndex = 0;
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
       }
+      return array;
     }
 
-    function handleCellClick(e) {
-      const clicked = e.target.dataset.position;
-      if (clicked === correctSequence[currentIndex]) {
+    function handleClick(e) {
+      const index = parseInt(e.target.dataset.index);
+      if (index === order[currentIndex]) {
         e.target.classList.add('correct');
+        e.target.classList.remove('wrong');
+        e.target.classList.add('done');
+        e.target.removeEventListener('click', handleClick);
         currentIndex++;
-        status.textContent = `Good! ${correctSequence.length - currentIndex} more to go...`;
-
-        if (currentIndex === correctSequence.length) {
-          status.textContent = 'Access granted.';
+        status.textContent = `Correct! ${totalTiles - currentIndex} steps remaining.`;
+        if (currentIndex === totalTiles) {
+          status.textContent = "You've cracked the code!";
           flag.style.display = 'block';
         }
       } else {
-        // Reset
-        resetGrid();
-        status.textContent = 'Wrong sequence! Start over.';
+        e.target.classList.add('wrong');
+        status.textContent = 'Wrong tile! Try again...';
       }
     }
 
-    function resetGrid() {
-      currentIndex = 0;
-      document.querySelectorAll('.cell').forEach(cell => {
-        cell.classList.remove('correct');
-        cell.classList.remove('wrong');
-      });
+    for (let i = 0; i < totalTiles; i++) {
+      const tile = document.createElement('div');
+      tile.classList.add('tile');
+      tile.dataset.index = i;
+      tile.textContent = i + 1;
+      tile.addEventListener('click', handleClick);
+      grid.appendChild(tile);
     }
   </script>
 </body>
