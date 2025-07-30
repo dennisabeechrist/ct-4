@@ -3,440 +3,167 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Maze Protocol: Mega CTF Edition</title>
+<title>Maze Protocol — CTF Challenge</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 body {
-  background: #050d13;
-  color: #00ff99;
-  font-family: 'Share Tech Mono', monospace;
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  background: #04090f; color: #00ff99; font-family: 'Share Tech Mono', monospace;
+  margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
 }
-h1 {
-  margin: 1.1rem 0 0.3rem 0;
-  font-size: 2.2rem;
-  font-weight: 600;
-  text-shadow: 0 0 10px #38ffc7, 0 0 28px #00ff99aa;
-  letter-spacing: 2px;
-}
-.controls {
-  margin-top: 0.2em;
-  font-size: 1em;
-  text-align: center;
-  color: #42facf;
-  text-shadow: 0 0 6px #05956255;
-}
-#message {
-  min-height: 1.8em;
-  margin: 0.5em 0 1em 0;
-  font-size: 1.16em;
-  color: #00ffb0;
-  text-align: center;
-  font-weight: 600;
-}
-#stats {
-  margin: 0 0 1em 0;
-  color: #32f9c7;
-  font-size: 1em;
-  text-align: center;
-  font-family: inherit;
-}
+h1 { margin:1.1rem 0 .5rem 0; font-size:2.15rem; text-shadow: 0 0 12px #00ff9970;}
+#message {font-size:1.1em; margin:.7em 0;height:1.4em; min-height:1.4em; color:#43fa94;}
 #maze {
-  display: grid;
-  grid-template-columns: repeat(16,28px);
-  grid-template-rows: repeat(16,28px);
-  gap: 3.5px;
-  margin: 1em 0 2em 0;
-  border-radius: 2em;
-  transition: filter .12s;
-  background: #022c20;
-  box-shadow: 0 0 30px #39ff7f50, 0 0 18px #195f45 inset;
-  outline: 2.5px solid #00ff9970;
-  user-select: none;
-  position: relative;
+  margin:.4em 0 1.4em 0;
+  display:grid;
+  grid-template-columns: repeat(20,22px);
+  grid-template-rows: repeat(20,22px);
+  gap:2.4px;
+  background:#010813; border-radius:1.6em;
+  box-shadow:0 0 23px #00ff9970, 0 0 13px #00ff9960 inset;
+  outline:1.7px solid #00ff9951;
+  user-select:none;
+  max-width:99vw;
+  overflow:auto;
 }
-.tile {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  background: #13212c;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.03em;
-  font-family: inherit;
-  transition: background .12s, box-shadow .1s, border .12s;
-}
-.tile.wall {
-  background: #283147;
-  border-top: 1.5px solid #0fe1ad70;
-  border-bottom: 1.5px solid #1ef39c60;
-}
-.tile.player {
-  background: #00ffb4;
-  color: #232129;
-  box-shadow: 0 0 12px #00ffcf;
-  font-weight: 900;
-}
-.tile.visited {
-  background: #183d34;
-}
-.tile.flag {
-  background: #caff61;
-  color: #215902;
-  font-weight: 700;
-  box-shadow: 0 0 14px #f7ff9b, 0 0 8px #b5ff00;
-}
-.tile.fakeflag {
-  background: #1fe8ea;
-  color: #1f273c;
-  font-weight: 700;
-}
-.tile.trap {
-  background: #a1162a;
-  color: #fff;
-  box-shadow: 0 0 12px #ff4400a9;
-}
-.tile.teleport {
-  background: #964cfb;
-  color: #fff;
-}
-.tile.mystery {
-  background: #203bbe;
-  color: #fff;
-}
-.tile.coin {
-  background: #ffc248;
-  color: #b65700;
-  font-size: 1.15em;
-  font-weight: 700;
-  box-shadow: 0 0 9px #fbc048;
-}
-.tile.locked {
-  background: #71717d;
-  color: #fff;
-  font-size: 1.1em;
-}
-.tile.key {
-  background: #ffe77a;
-  color: #af9605;
-  font-size: 1.11em;
-}
-.tile.oneway {
-  background:linear-gradient(115deg,#889,#ccb 13px,#889 13px);
-  color: #161926;
-}
-#minimap {
-  margin: 1.3em 0;
-  font-size: .99em;
-  background: #042019;
-  color: #cfffe7;
-  padding: .5em;
-  display: none;
-  border-radius: 1.2em;
-  overflow-x: auto;
-  max-width: 95vw;
-  box-shadow: 0 0 8px #aaffcc44;
-}
-#overlay {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(15,32,43,0.92);
-  z-index: 99;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #ccffe9;
-  font-family: inherit;
-  font-size: 1.13em;
-}
-.overlay-box {
-  background: #062f1e; padding: 2em 2.2em;
-  border-radius: 1.2em;
-  box-shadow: 0 0 22px #00ffe799;
-  text-align: center; max-width: 90vw;
-}
-button {
-  margin: .18em .13em;
-  font-size: .98em;
-  background: #003211;
-  border: 1.5px solid #00faa7;
-  color: #fff;
-  border-radius: 6px;
-  min-width: 2.5em;
-  padding: .25em .6em;
-  font-family: inherit;
-  cursor: pointer;
-}
-option, select {font-family: inherit;}
-@media (max-width: 800px) {
-  #maze { grid-template-columns: repeat(16, minmax(16px, 1fr));}
-  .tile {width: 18px; height:18px; font-size:.89em;}
-}
-.cb .tile {filter: grayscale(1) contrast(1.5) brightness(1.2);}
-.highc .tile {filter:contrast(2.2) saturate(1.5);}
-.min .tile {filter:grayscale(1) brightness(1.18);}
+.tile {width:22px;height:22px;border-radius:5px;background:#14262b;display:flex;align-items:center;justify-content:center; font-size:.97em; font-family:inherit;}
+.tile.wall {background:#334;}
+.tile.player {background:#0ef5ce; color:#29222a; box-shadow:0 0 10px #29fff7aa;}
+.tile.visited {background:#23423f;}
+.tile.flag {background:#fefd79; color:#415704; font-weight:700; box-shadow:0 0 12px #eaff43cc;}
+.tile.fakeflag {background:#58e4ea; color:#092e3c; font-weight:700;}
+.tile.trap {background:#b70e2b; color:#fff;}
+.tile.teleport {background:#9933ff; color:#fff;}
+.tile.deadend {background:#1c2427;}
+button { margin:.17em .18em; font-size:.97em; background:#003211; border:1.2px solid #00faa7; color:#fff; border-radius:5px;min-width:2.2em;padding:.18em .6em; font-family:inherit;}
 </style>
 </head>
 <body>
-<h1>Maze Protocol: Mega CTF</h1>
-<div class="controls">
-<b>Find the real <span style="color:#d4ff38;">🏁 Flag</span>!</b> &nbsp; 
-<span style="color:#5ee">Arrow keys / WASD: Move &nbsp; | &nbsp; M: Minimap &nbsp; | &nbsp; R: Reset &nbsp; | &nbsp; C/N/H: Accessibility</span>
-</div>
+<h1>Maze Protocol: CTF Challenge</h1>
 <div id="message"></div>
-<div id="stats"></div>
+<div style="font-size:1em;max-width:550px;line-height:1.2;text-align:center">
+  Use <b>Arrows</b> or <b>WASD</b> to navigate to the real <span style="color:#f6ff41">🏁 flag</span>.<br>
+  Avoid <span style="color:#e95">traps (💀)</span>, ignore <span style="color:#1be">fakes (🚩)</span>, and don't trust teleports (<span style="color:#c6f">🟣</span>)...<br>
+  <b>R = Reset (new hard maze)</b>.
+</div>
 <div id="maze"></div>
 <div>
-<button onclick="resetMaze()">Reset</button>
-<button onclick="toggleMinimap()">Minimap</button>
-<button onclick="showOverlay()">Stats</button>
-<select id="cbmode" onchange="setViewMode(this.value)">
-  <option value="">Theme</option>
-  <option value="cb">Colorblind</option>
-  <option value="highc">High Contrast</option>
-  <option value="min">Minimalist</option>
-</select>
+<button onclick="resetMaze()">Reset (R)</button>
 </div>
-<div id="minimap"></div>
-<div id="overlay"></div>
 <script>
-// --- UTILITY --
-const SIZE = 16, WALL = "#", PATH = ".";
-function rng(n) { return Math.floor(Math.random() * n); }
-function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { let j = rng(i + 1); [arr[i], arr[j]] = [arr[j], arr[i]]; } }
-// --- SOUND --
-function playFreq(f,ms=120){try{let ac=new(window.AudioContext||window.webkitAudioContext)(),o=ac.createOscillator();o.type='triangle';o.frequency.setValueAtTime(f,ac.currentTime);o.connect(ac.destination);o.start();setTimeout(()=>{o.stop();ac.close();},ms);}catch(e){}}
-function beep(){playFreq(340);}
-function flagBeep(){playFreq(650,180);}
-function trapBeep(){playFreq(170,220);}
-function teleportBeep(){playFreq(555,90);setTimeout(()=>playFreq(210,70),60);}
-function coinBeep(){playFreq(980,60);}
-function lockBeep(){playFreq(421,80);}
-function keyBeep(){playFreq(531,120);}
-function mysteryBeep(){playFreq(311,170);}
-function deadBeep(){playFreq(100,220);}
-// --- STATE ---
-let grid, player, moves=0, visited, flag, fakeFlags=[],traps=[],teleports=[],mysteries=[], coins=[], oneWays=[],locked=[], keys=[], score=0, hasKey=false, streak=0, bestRun=null, win=false;
-const NTRAPS=8, NFAKES=3, NTELE=2, NCOIN=8, NMYST=2, NLOCK=2, NKEY=2, NONEWAY=2;
-function resetMaze() {
-  // Generate maze with DFS
-  grid=[...Array(SIZE)].map(()=>Array(SIZE).fill(WALL));
+const SIZE=20, WALL="#", PATH=".", DANGEROUSNESS=30, FAKEFLAGS=8, TELEPORTS=3;
+const mazeDiv=document.getElementById("maze"),messageEl=document.getElementById("message");
+let grid,player,flag,fakeFlags=[],traps=[],teleports=[],visited,win=false; // state
+
+function rng(n){return Math.floor(Math.random()*n);}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
+function resetMaze(){
+  win=false;grid=[...Array(SIZE)].map(()=>Array(SIZE).fill(WALL));
   visited=[...Array(SIZE)].map(()=>Array(SIZE).fill(false));
-  let st=[[0,0]], p={x:0,y:0};
+  // DFS maze gen
+  let st=[[0,0]];
   grid[0][0]=PATH;
-  while(st.length) {
-    let [x,y]=st[st.length-1],dirs=[];
-    for(let[dx,dy] of [[0,2],[2,0],[-2,0],[0,-2]]) {
-      let nx=x+dx,ny=y+dy;
+  while(st.length){
+    let[x,y]=st[st.length-1],dirs=[];
+    for(let[dx,dy] of [[0,2],[2,0],[-2,0],[0,-2]]){
+      let nx=x+dx, ny=y+dy;
       if(nx>=0&&ny>=0&&nx<SIZE&&ny<SIZE&&grid[ny][nx]===WALL)dirs.push([nx,ny]);
     }
-    if(dirs.length) {
+    if(dirs.length){
       let [nx,ny]=dirs[rng(dirs.length)];
-      grid[(y+ny)/2][(x+nx)/2]=PATH; grid[ny][nx]=PATH;
+      grid[(ny+y)/2][(nx+x)/2]=PATH;
+      grid[ny][nx]=PATH;
       st.push([nx,ny]);
     } else st.pop();
   }
-  // Place special tiles
-  let empties=[];
-  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(grid[y][x]==PATH&&(x!=0||y!=0))empties.push([x,y]);
+  // Find hardest (farthest) cell for flag
+  let explore=[[0,0,0]], farthest=[0,0,0], seen=new Set(["0,0"]);
+  while(explore.length){
+    let[x,y,steps]=explore.pop();
+    if(steps>farthest[2])farthest=[x,y,steps];
+    for(let [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){
+      let nx=x+dx,ny=y+dy; if(nx<0||ny<0||nx>=SIZE||ny>=SIZE)continue;
+      if(grid[ny][nx]!=PATH)continue;
+      let k=`${nx},${ny}`; if(seen.has(k))continue;
+      explore.push([nx,ny,steps+1]);seen.add(k);}
+  }
+  flag=[farthest[0],farthest[1]];
+  // Fill dead-ends to make maze long (time consuming, not just luck!)
+  let deads=0;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(grid[y][x]==PATH){
+    let n=0;for(let[dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){let nx=x+dx,ny=y+dy;if(nx>=0&&ny>=0&&nx<SIZE&&ny<SIZE&&grid[ny][nx]==PATH)n++;}
+    if(n<=1&&!(x==0&&y==0)&&!(x==flag[0]&&y==flag[1])){deads++;}} // many dead ends
+  // Place player, special tiles
+  player={x:0,y:0};visited[0][0]=true;fakeFlags=[];traps=[];teleports=[];
+  let empties=[];for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)
+    if(grid[y][x]==PATH&&(x!=0||y!=0)&&(x!=flag[0]||y!=flag[1]))empties.push([x,y]);
   shuffle(empties);
-  player={x:0,y:0};
-  visited[0][0]=true;
-  flag=empties.pop();
-  fakeFlags=[];for(let i=0;i<NFAKES;i++)fakeFlags.push(empties.pop());
-  traps=[];for(let i=0;i<NTRAPS;i++)traps.push(empties.pop());
-  teleports=[];for(let i=0;i<NTELE;i++)teleports.push(empties.pop());
-  mysteries=[];for(let i=0;i<NMYST;i++)mysteries.push(empties.pop());
-  coins=[];for(let i=0;i<NCOIN;i++)coins.push(empties.pop());
-  locked=[];for(let i=0;i<NLOCK;i++)locked.push(empties.pop());
-  keys=[];for(let i=0;i<NKEY;i++)keys.push(empties.pop());
-  oneWays=[];for(let i=0;i<NONEWAY;i++)oneWays.push({x:empties[i][0],y:empties[i][1],dir:rng(4)});
-  moves=0; score=0; hasKey=false; win=false;
-  draw(); stats(); msg("Maze reset. Find the <b>🏁 flag</b>! Use Arrow keys / WASD.");
+  for(let i=0;i<FAKEFLAGS;i++)fakeFlags.push(empties.pop());
+  for(let i=0;i<DANGEROUSNESS;i++)traps.push(empties.pop());
+  for(let i=0;i<TELEPORTS;i++)teleports.push(empties.pop());
+  draw(); message("Maze loaded. Good luck!");
 }
 function tt(x,y){
   if(x===player.x&&y===player.y)return "player";
   if(x===flag[0]&&y===flag[1])return "flag";
-  for(let [fx,fy] of fakeFlags)if(x==fx&&y==fy)return "fakeflag";
-  for(let [tx,ty] of traps)if(x==tx&&y==ty)return "trap";
-  for(let [tx,ty] of teleports)if(x==tx&&y==ty)return "teleport";
-  for(let [mx,my] of mysteries)if(x==mx&&y==my)return "mystery";
-  for(let [cx,cy] of coins)if(x==cx&&y==cy)return "coin";
-  for(let [lx,ly] of locked)if(x==lx&&y==ly)return "locked";
-  for(let [kx,ky] of keys)if(x==kx&&y==ky)return "key";
-  for(let o of oneWays)if(x==o.x&&y==o.y)return "oneway";
+  for(let[fx,fy]of fakeFlags)if(x==fx&&y==fy)return "fakeflag";
+  for(let[tx,ty]of traps)if(x==tx&&y==ty)return "trap";
+  for(let[tx,ty]of teleports)if(x==tx&&y==ty)return "teleport";
+  let n=0;for(let[dx,dy]of [[0,1],[1,0],[-1,0],[0,-1]]){let nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=SIZE||ny>=SIZE)continue;if(grid[ny][nx]==PATH)n++;}
+  if(grid[y][x]==PATH&&n<=1&&!(x==0&&y==0)&&(x!=flag[0]||y!=flag[1]))return "deadend";
   return grid[y][x]==WALL?"wall":visited[y][x]?"visited":"";
 }
 function emojiTile(type,x,y){
   switch(type){
-    case "player": return "🚀";
+    case "player": return "🤖";
     case "flag": return "🏁";
     case "trap": return "💀";
     case "fakeflag": return "🚩";
     case "teleport": return "🟣";
-    case "mystery": return "❓";
-    case "coin": return "🪙";
-    case "key": return "🔑";
-    case "locked": return "🔒";
-    case "oneway":{
-      const dirs=["↓","←","↑","→"];
-      let o=oneWays.find(oo=>oo.x==x&&oo.y==y); return o?dirs[o.dir]:"→";
-    }
+    case "deadend": return "·";
     default: return "";
   }
 }
-function canEnter(nx,ny,px,py){
+function canEnter(nx,ny){
   if(nx<0||ny<0||nx>=SIZE||ny>=SIZE)return false;
   if(grid[ny][nx]==WALL)return false;
-  // Check locked
-  for(const [lx,ly] of locked)
-    if(nx==lx&&ny==ly&&!hasKey){
-      msg("🔒 Locked! Find a key!");
-      lockBeep(); return false;
-    }
-  // Onway tiles: only one direction allowed
-  for(const o of oneWays)
-    if(nx==o.x&&ny==o.y){
-      // dir: 0=down,1=left,2=up,3=right, prevents entry except from allowed side
-      let dx=nx-px,dy=ny-py,dirs=[[0,1],[-1,0],[0,-1],[1,0]];
-      let allowed=dirs[o.dir];
-      if(dx!=allowed[0]||dy!=allowed[1]){msg("🚧 Can't pass one-way!"); beep(); return false;}
-    }
   return true;
 }
 function movePlayer(dx,dy){
   if(win)return;
   let nx=player.x+dx,ny=player.y+dy;
-  if(!canEnter(nx,ny,player.x,player.y))return;
-  player={x:nx,y:ny};moves++;visited[ny][nx]=true;
-  let t=tt(nx,ny),special=false;
-  // Key
-  for(let i=0;i<keys.length;i++)if(nx==keys[i][0]&&ny==keys[i][1]){
-    msg("🔑 Key! Locked doors are now open.");hasKey=true;keyBeep(); keys.splice(i,1); special=true;
-    break;
-  }
-  for(let i=0;i<locked.length;i++)if(nx==locked[i][0]&&ny==locked[i][1]&&hasKey){
-    msg("🔓 Used your key!"); lockBeep(); locked.splice(i,1); hasKey=false; break;
-  }
-  // Trap
-  for(let i=0;i<traps.length;i++)if(nx==traps[i][0]&&ny==traps[i][1]){
-    msg("🔥 Trap! Back to start."); trapBeep(); player.x=0;player.y=0;moves++; special=true;
-    return draw(),stats();
-  }
-  // Teleport
-  for(let i=0;i<teleports.length;i++)if(nx==teleports[i][0]&&ny==teleports[i][1]){
-    msg("🟣 Teleport! Whooosh!"); teleportBeep();
-    let opens=[]; for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(grid[y][x]==PATH&&(x!=nx||y!=ny))opens.push([x,y]);
-    let [tx,ty]=opens[rng(opens.length)]; player.x=tx;player.y=ty; special=true;
-    break;
-  }
-  // Mystery
-  for(let i=0;i<mysteries.length;i++)if(nx==mysteries[i][0]&&ny==mysteries[i][1]){
-    let rnd=rng(3); mysteryBeep(); special=true;
-    if(rnd==0){msg("✨ Reveal! All traps shown briefly."); showTrapMinimap();return;}
-    if(rnd==1){msg("💥 Mystery...Back to start!"); player.x=0;player.y=0; return draw(),stats();}
-    if(rnd==2){msg("💠 Bonus: +4 score"); score+=4;}
-    break;
-  }
-  // Coin
-  for(let i=0;i<coins.length;i++)if(nx==coins[i][0]&&ny==coins[i][1]){
-    msg("🪙 Collected coin! +2 score."); coinBeep(); score+=2; coins.splice(i,1); special=true; break;
-  }
-  // Fake flag
-  if(t=="fakeflag") {msg("❗️That's a fake flag!"); deadBeep(); special=true;}
-  // One-way
-  if(t=="oneway") msg("→ One-way passed.");
-  // Win!
+  if(!canEnter(nx,ny))return;
+  player={x:nx,y:ny};visited[ny][nx]=true;
+  let t=tt(nx,ny);
+  if(t=="trap"){message("🔥 Trap! Back to start."); player={x:0,y:0};}
+  else if(t=="teleport"){
+    message("🟣 Teleport! Sent somewhere...");let opens=[];
+    for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)
+      if(grid[y][x]==PATH&&(x!=nx||y!=ny)&&!(x==flag[0]&&y==flag[1]))opens.push([x,y]);
+    let [tx,ty]=opens[rng(opens.length)]; player={x:tx,y:ty};}
+  else if(t=="fakeflag"){message("❗️Decoy! Keep searching.");}
   if(nx==flag[0]&&ny==flag[1]){
-    win=true;
-    msg("🏁 <b>You found the real flag!</b><br><span style='color:#fff;background:#170; padding:2px 6px; border-radius:4px;'>flag{mega_ctf_maze_proto}</span><br>Moves: "+moves+" | Score: "+score);
-    flagBeep();
-    streak++; if(!bestRun||moves<bestRun)moves<bestRun;
-    setTimeout(()=>{if(confirm("Play again?"))resetMaze();},1400);
-    return draw(),stats();
+    win=true;message("🏁 <b>You found the flag!</b><br><span style='color:#fff;background:#170; padding:2px 6px; border-radius:4px;'>flag{maze_ctf_master}</span>");
+    setTimeout(()=>{if(confirm("Play again?"))resetMaze();},1600);return;
   }
-  if(!special)msg("Keep going...");
-  draw(); stats();
+  draw();
 }
 function draw() {
   mazeDiv.innerHTML="";
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
     let td=tt(x,y),d=document.createElement("div");
-    d.className="tile "+td;
-    d.tabIndex=-1; d.setAttribute("aria-label",`[${y+1},${x+1}] ${td}`);
+    d.className="tile "+td; d.tabIndex=-1;
     d.innerHTML=emojiTile(td,x,y);
     mazeDiv.appendChild(d);
   }
 }
-function stats(){
-  statsEl.innerHTML = `Moves: <b>${moves}</b> &nbsp; | &nbsp; Score: <b>${score}</b> &nbsp; | &nbsp; Streak: ${streak} &nbsp; | Best: ${bestRun??'-'} moves ${hasKey?' | <b>KEY</b>':''}`;
-}
-function msg(m) { messageEl.innerHTML = m; }
-function minimapRender(showSpecials=false) {
-  let out="<b>Minimap</b> <pre style='margin:.2em 0'>";
-  for(let y=0;y<SIZE;y++) {
-    for(let x=0;x<SIZE;x++) {
-      let td=tt(x,y);
-      if(grid[y][x]==WALL)out+="#";
-      else if(x==player.x&&y==player.y)out+="P";
-      else if(x==flag[0]&&y==flag[1])out+="F";
-      else if(showSpecials&&traps.some(t=>t[0]==x&&t[1]==y))out+="X";
-      else if(fakeFlags.some(f=>f[0]==x&&f[1]==y))out+="!";
-      else if(coins.some(f=>f[0]==x&&f[1]==y))out+="C";
-      else if(keys.some(f=>f[0]==x&&f[1]==y))out+="K";
-      else if(locked.some(f=>f[0]==x&&f[1]==y))out+="L";
-      else if(teleports.some(f=>f[0]==x&&f[1]==y))out+="T";
-      else if(mysteries.some(f=>f[0]==x&&f[1]==y))out+="?";
-      else if(oneWays.some(o=>o.x==x&&o.y==y))out+=">";
-      else out+=visited[y][x]?".":" ";
-    }out+="\n";
-  }
-  out+="</pre>";
-  minimap.innerHTML=out;
-}
-function toggleMinimap(){
-  if(minimap.style.display=='block')minimap.style.display='none';
-  else{minimapRender();minimap.style.display='block';}
-}
-function showTrapMinimap(){
-  minimapRender(true); minimap.style.display='block';
-  setTimeout(()=>{minimap.style.display='none'},1700);
-}
-function showOverlay(){
-  overlay.style.display='flex';
-  overlay.innerHTML =
-    `<div class='overlay-box'>
-    <b>Maze Mega CTF Stats</b><br>
-    Moves: ${moves}<br> Coins: ${score}<br>
-    Streak: ${streak}<br>
-    ${bestRun ? 'Best Run: '+bestRun+' moves<br>' : ''}
-    <small>Q/Esc to close, R = reset</small>
-    </div>`;
-}
+function message(txt){messageEl.innerHTML=txt;}
 window.addEventListener("keydown",e=>{
   if(["ArrowUp","w","W"].includes(e.key))movePlayer(0,-1);
   if(["ArrowDown","s","S"].includes(e.key))movePlayer(0,1);
   if(["ArrowLeft","a","A"].includes(e.key))movePlayer(-1,0);
   if(["ArrowRight","d","D"].includes(e.key))movePlayer(1,0);
   if(e.key==="r"||e.key==="R")resetMaze();
-  if(e.key==="m"||e.key==="M")toggleMinimap();
-  if(e.key==="s"||e.key==="S")showOverlay();
-  if(e.key==="Escape"||e.key==="q"||e.key==="Q")overlay.style.display='none';
-  if(e.key==="c"||e.key==="C")setViewMode("cb");
-  if(e.key==="n"||e.key==="N")setViewMode("min");
-  if(e.key==="h"||e.key==="H")setViewMode("highc");
 });
-function setViewMode(mode){
-  let bd=document.body;bd.classList.remove("cb","highc","min");
-  if(mode&&["cb","highc","min"].includes(mode))bd.classList.add(mode);
-}
-overlay.onclick=()=>overlay.style.display='none';
 resetMaze();
 </script>
 </body>
